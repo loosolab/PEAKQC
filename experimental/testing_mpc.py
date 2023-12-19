@@ -236,9 +236,11 @@ class MPFragmentCounter():
         df1 = pd.DataFrame(count_dict_1).T
         df2 = pd.DataFrame(count_dict_2).T
 
+        print(df1['dist'].sum(axis=1))
+        print(df2['dist'].sum(axis=1))
         # merge distributions
         combined_dists = df1['dist'].combine(df2['dist'], func=self._update_dist)
-
+        print(combined_dists.sum())
         # merge counts
         merged_counts = pd.merge(df1["insertsize_count"], df2["insertsize_count"], left_index=True, right_index=True,
                                  how='outer').fillna(0)
@@ -282,12 +284,12 @@ if __name__ == "__main__":
     # Test
     import episcanpy as epi
 
-    #fragments = "/mnt/workspace2/jdetlef/data/public_data/fragments_heart_left_ventricle_194_sorted.bed"
-    #h5ad_file = "/mnt/workspace2/jdetlef/data/public_data/heart_lv_SM-JF1NY.h5ad"#
+    fragments = "/mnt/workspace2/jdetlef/data/public_data/fragments_heart_left_ventricle_194_sorted.bed"
+    h5ad_file = "/mnt/workspace2/jdetlef/data/public_data/heart_lv_SM-JF1NY.h5ad"#
 
     #fragments = "/home/jan/Workspace/bio_data/small_fragments.bed"
-    fragments = "/home/jan/Workspace/bio_data/fragments_heart_left_ventricle_194_sorted.bed"
-    h5ad_file = "/home/jan/Workspace/bio_data/heart_lv_SM-JF1NY.h5ad"
+    #fragments = "/home/jan/Workspace/bio_data/fragments_heart_left_ventricle_194_sorted.bed"
+    #h5ad_file = "/home/jan/Workspace/bio_data/heart_lv_SM-JF1NY.h5ad"
     adata = epi.read_h5ad(h5ad_file)
     adata_barcodes = adata.obs.index.tolist()
     # split index for barcodes CBs
