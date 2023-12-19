@@ -9,6 +9,7 @@ from tqdm import tqdm
 from beartype import beartype
 from beartype.typing import Any, Optional
 
+
 @beartype
 def _is_gz_file(filepath: str) -> bool:
     """
@@ -27,6 +28,7 @@ def _is_gz_file(filepath: str) -> bool:
 
     with open(filepath, 'rb') as test_f:
         return test_f.read(2) == b'\x1f\x8b'
+
 
 class MPFragmentCounter():
     """
@@ -83,6 +85,9 @@ class MPFragmentCounter():
 
         return True
 
+    def custom_callback(self, error):
+        print(error, flush=True)
+
     def insertsize_from_fragments(self, fragments: str,
                                   barcodes: Optional[list[str]] = None,
                                   n_threads: int = 8) -> pd.DataFrame:
@@ -122,10 +127,10 @@ class MPFragmentCounter():
         # split fragments into chunks
         for chunk in tqdm(iterator, desc="Processing Chunks"):
             # apply async job wit callback function
-            job = pool.apply_async(self._count_fragments_worker, args=(chunk, barcodes, check_in, managed_dict))
+            job = pool.apply_async(self._count_fragments_worker, args=(chunk, barcodes, check_in, managed_dict),
+                                   error_callback=self.custom_callback)
             jobs.append(job)
-        # monitor progress
-        # utils.monitor_jobs(jobs, description="Progress")
+
         # close pool
         pool.close()
         # wait for all jobs to finish
@@ -143,7 +148,7 @@ class MPFragmentCounter():
         # Convert dict to pandas dataframe
         print("Converting counts to dataframe...")
         table = pd.DataFrame.from_dict(count_dict, orient="index")
-        #table = table[["insertsize_count", "mean_insertsize"] + sorted(table.columns[2:])]
+        # table = table[["insertsize_count", "mean_insertsize"] + sorted(table.columns[2:])]
         table["mean_insertsize"] = table["mean_insertsize"].round(2)
 
         print("Done getting insertsizes from fragments!")
@@ -178,9 +183,10 @@ class MPFragmentCounter():
             if check_in(barcode, barcodes) is True:
                 count_dict = self._add_fragment(count_dict, barcode, size, count)
 
-        with lock:
-            latest = managed_dict['output']
-            managed_dict['output'] = self._update_count_dict(latest, count_dict)
+        lock.acquire()
+        latest = managed_dict['output']
+        managed_dict['output'] = self._update_count_dict(latest, count_dict)
+        lock.release()
 
     def _add_fragment(self, count_dict: dict[str, int],
                       barcode: str,
@@ -207,7 +213,7 @@ class MPFragmentCounter():
             count_dict[barcode] = {"mean_insertsize": 0, "insertsize_count": 0}
 
         # Add read to dict
-        if size >= 0 and size <= max_size:  # do not save negative insertsize, and set a cap on the maximum insertsize to limit outlier effects
+        if size > 0 and size <= max_size:  # do not save negative insertsize, and set a cap on the maximum insertsize to limit outlier effects
 
             count_dict[barcode]["insertsize_count"] += count
 
@@ -218,8 +224,8 @@ class MPFragmentCounter():
             count_dict[barcode]["mean_insertsize"] = mu + diff
 
             # Save to distribution
-            if size not in count_dict[barcode]:  # first time size is seen
-                count_dict[barcode]['dist'] = np.zeros(max_size)
+            if 'dist' not in count_dict[barcode]:  # first time size is seen
+                count_dict[barcode]['dist'] = np.zeros(max_size + 1)
             count_dict[barcode]['dist'][size] += count
 
         return count_dict
@@ -236,11 +242,8 @@ class MPFragmentCounter():
         df1 = pd.DataFrame(count_dict_1).T
         df2 = pd.DataFrame(count_dict_2).T
 
-        print(df1['dist'].sum(axis=1))
-        print(df2['dist'].sum(axis=1))
         # merge distributions
         combined_dists = df1['dist'].combine(df2['dist'], func=self._update_dist)
-        print(combined_dists.sum())
         # merge counts
         merged_counts = pd.merge(df1["insertsize_count"], df2["insertsize_count"], left_index=True, right_index=True,
                                  how='outer').fillna(0)
@@ -268,28 +271,27 @@ class MPFragmentCounter():
 
         return updated_dict
 
-
     def _update_dist(self, dist_1, dist_2):
         """Updates the Insertsize Distributions"""
         if not np.isnan(dist_1).any() and not np.isnan(dist_2).any():
             updated_dist = dist_1 + dist_2
-            return updated_dist
+            return updated_dist.astype(int)
         elif np.isnan(dist_1).any():
-            return dist_2
+            return dist_2.astype(int)
         elif np.isnan(dist_2).any():
-            return dist_1
+            return dist_1.astype(int)
 
 
 if __name__ == "__main__":
     # Test
     import episcanpy as epi
 
-    fragments = "/mnt/workspace2/jdetlef/data/public_data/fragments_heart_left_ventricle_194_sorted.bed"
-    h5ad_file = "/mnt/workspace2/jdetlef/data/public_data/heart_lv_SM-JF1NY.h5ad"#
+    #fragments = "/mnt/workspace2/jdetlef/data/public_data/fragments_heart_left_ventricle_194_sorted.bed"
+    #h5ad_file = "/mnt/workspace2/jdetlef/data/public_data/heart_lv_SM-JF1NY.h5ad"#
 
     #fragments = "/home/jan/Workspace/bio_data/small_fragments.bed"
-    #fragments = "/home/jan/Workspace/bio_data/fragments_heart_left_ventricle_194_sorted.bed"
-    #h5ad_file = "/home/jan/Workspace/bio_data/heart_lv_SM-JF1NY.h5ad"
+    fragments = "/home/jan/Workspace/bio_data/fragments_heart_left_ventricle_194_sorted.bed"
+    h5ad_file = "/home/jan/Workspace/bio_data/heart_lv_SM-JF1NY.h5ad"
     adata = epi.read_h5ad(h5ad_file)
     adata_barcodes = adata.obs.index.tolist()
     # split index for barcodes CBs
