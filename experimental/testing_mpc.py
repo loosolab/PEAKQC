@@ -1,5 +1,4 @@
 # individual imports
-import episcanpy as epi
 import pandas as pd
 import numpy as np
 import gzip
@@ -29,12 +28,6 @@ def _is_gz_file(filepath: str) -> bool:
     with open(filepath, 'rb') as test_f:
         return test_f.read(2) == b'\x1f\x8b'
 
-def init_pool_processes(the_lock):
-    '''Initialize each process with a global variable lock.
-    '''
-    global lock
-    lock = the_lock
-
 class MPFragmentCounter():
     """
     """
@@ -42,6 +35,13 @@ class MPFragmentCounter():
     def __init__(self):
         """Init class variables."""
         pass
+
+    def init_pool_processes(self, the_lock):
+        '''
+        Initialize each process with a global variable lock.
+        '''
+        global lock
+        lock = the_lock
 
     def _check_in_list(self, element: Any, alist: list[Any] | set[Any]) -> bool:
         """
@@ -116,7 +116,7 @@ class MPFragmentCounter():
         lock = Lock()
         managed_dict = m.dict()
         managed_dict['output'] = {}
-        pool = Pool(processes=n_threads, initializer=init_pool_processes, initargs=(lock,), maxtasksperchild=48)
+        pool = Pool(processes=n_threads, initializer=self.init_pool_processes, initargs=(lock,), maxtasksperchild=48)
         jobs = []
         print('Starting counting fragments...')
         # split fragments into chunks
