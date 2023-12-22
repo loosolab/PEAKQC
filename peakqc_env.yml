@@ -4,7 +4,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - scanpy
+  - episcanpy
   - scipy
   - matplotlib
   - numpy
