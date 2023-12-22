@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: peakqc
+Version: 0.1b0
+Summary: Module for quality control of ATAC-seq data
+License: MIT
+Requires-Python: >=3.9
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: matplotlib
+Requires-Dist: tqdm
+Requires-Dist: beartype
+Requires-Dist: matplotlib
+Requires-Dist: scanpy
+Requires-Dist: scipy

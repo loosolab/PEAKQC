@@ -1,0 +1,8 @@
+numpy
+pandas
+matplotlib
+tqdm
+beartype
+matplotlib
+scanpy
+scipy

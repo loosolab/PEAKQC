@@ -1,0 +1,16 @@
+.gitignore
+README.md
+setup.py
+experimental/Untitled.ipynb
+experimental/experimental_counting.ipynb
+experimental/fld_counts.py
+experimental/insertsizes.py
+experimental/testing_mpc.py
+peakqc.egg-info/PKG-INFO
+peakqc.egg-info/SOURCES.txt
+peakqc.egg-info/dependency_links.txt
+peakqc.egg-info/requires.txt
+peakqc.egg-info/top_level.txt
+peakqc/tools/fld_scoring.py
+peakqc/tools/insertsizes.py
+peakqc/utils/general.py

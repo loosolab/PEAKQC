@@ -1,7 +1,3 @@
-""" Count insertsizes"""
-# Author: Jan Detleffsen
-
-# Imports
 import pandas as pd
 import numpy as np
 import gzip

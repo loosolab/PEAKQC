@@ -1,4 +1,4 @@
-"""Tools for scATAC nucleosome analysis."""
+"""Tools for automated validation of the periodical pattern of scATAC Fragment Length Distributions."""
 import numpy as np
 import pandas as pd
 import scanpy as sc
@@ -13,8 +13,8 @@ from beartype.typing import Optional, Literal, SupportsFloat
 from beartype import beartype
 import numpy.typing as npt
 
-import sctoolbox.tools as tools  # add_insertsize()
-import sctoolbox.plotting as plotting  # save_figure()
+import peakqc.tools as tools
+import peakqc.utils as utils  # save_figure()
 
 import sctoolbox.utils.decorator as deco
 from sctoolbox._settings import settings
@@ -427,7 +427,7 @@ def build_score_mask(plot: bool = True,
         ax.set_ylabel('Scoring')
 
         if save:
-            plotting._save_figure('score_mask')
+            utils._save_figure('score_mask')
 
     return gaussians
 
@@ -521,7 +521,7 @@ def cos_wavelet(wavelength: int = 100,
         ax.set_ylabel('Amplitude')
 
         if save:
-            plotting._save_figure(figure_name)
+            utils._save_figure(figure_name)
 
         # Optionally, to show the figure
         plt.show()
@@ -851,7 +851,7 @@ def density_plot(count_table: npt.ArrayLike,
 
     if main_plot:
         if save:
-            plotting._save_figure(figure_name)
+            utils._save_figure(figure_name)
 
         plt.show()
 
@@ -926,7 +926,7 @@ def plot_wavelet_transformation(convolution: npt.ArrayLike,
 
     # Save the figure
     if save:
-        plotting._save_figure(figure_name)
+        utils._save_figure(figure_name)
 
     plt.show()
 
@@ -1000,13 +1000,42 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
     plt.tight_layout()
 
     if save:
-        plotting._save_figure(figure_name)
+        utils._save_figure(figure_name)
 
     plt.show()
 
     axes = np.array([ax1, ax2, ax3])
 
     return axes
+
+
+def get_dist_df(dist: pd.DataFrame) -> pd.DataFrame:
+    """
+    Return a dataframe of the fragment length distribution.
+    Input is a dataframe of the insertsizes._insertsize_from_fragments function.
+
+    Parameters
+    ----------
+    dist : pd.DataFrame
+        Dataframe of the insertsizes._insertsize_from_fragments function.
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe of the fragment length distribution.
+    """
+    # create a dictionary with the barcodes as keys and the distribution as values
+    table_dict = {}
+    for row in dist.iterrows(): # loop over all rows / barcodes
+        barcode = str(row[0]) # get barcode
+        table_dict[barcode] = {} # create a dictionary for the barcode
+
+        for i, counts in enumerate(row[1]['dist']): # loop over all counts
+            table_dict[barcode][i] = counts # add the count to the dictionary
+
+    dist_df = pd.DataFrame(table_dict).T # create a dataframe from the dictionary
+
+    return dist_df
 
 
 # ///////////////////////////////////////// final wrapper \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -1079,13 +1108,14 @@ def add_fld_metrics(adata: sc.AnnData,
     if bam is not None and fragments is not None:
         raise ValueError("Please provide either a bam file or a fragments file - not both.")
 
-    elif bam is not None:
-        count_table = tools._insertsize_from_bam(bam, barcode_tag=barcode_tag, regions=regions, barcodes=adata_barcodes)
+    #elif bam is not None:
+        #count_table = tools._insertsize_from_bam(bam, barcode_tag=barcode_tag, regions=regions, barcodes=adata_barcodes)
 
     elif fragments is not None:
-        count_table = tools._insertsize_from_fragments(fragments, barcodes=adata_barcodes)
+        count_table = tools.insertsize_from_fragments(fragments, barcodes=adata_barcodes)
 
-    dist = count_table[[c for c in count_table.columns if isinstance(c, int)]]
+    # get the fragment length distribution
+    dist = get_dist_df(count_table)
     # remove all rows containing only 0
     filtered_dist = dist.loc[~(dist == 0).all(axis=1)]
     # extract available barcodes

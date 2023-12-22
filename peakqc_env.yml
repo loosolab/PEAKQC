@@ -1,0 +1,13 @@
+name: peakqc
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - scanpy
+  - scipy
+  - matplotlib
+  - numpy
+  - pandas
+  - tqdm
+  - beartype

@@ -6,12 +6,12 @@ import re
 import os
 import glob
 
-# Find all packages in sctoolbox
-packages = find_namespace_packages("peak-qc")
-packages = ["peak-qc." + package for package in packages]
+# Find all packages in peakqc
+packages = find_namespace_packages("peakqc")
+packages = ["peakqc." + package for package in packages]
 
 # find top level scripts
-#modules = glob.glob("peak-qc/*.py")
+#modules = glob.glob("peakqc/*.py")
 #modules = [m.replace("/", ".")[:-3] for m in modules if not m.endswith("__init__.py")]
 
 def find_version(f: str) -> str:
@@ -42,9 +42,9 @@ def find_version(f: str) -> str:
 
 
 setup(
-    name="peak-qc",
+    name="peakqc",
     description='Module for quality control of ATAC-seq data',
-    version=find_version(os.path.join("peak-qc", "_version.py")),
+    version=find_version(os.path.join("peakqc", "_version.py")),
     license='MIT',
     packages=packages,
     python_requires='>=3.9',
@@ -52,5 +52,10 @@ setup(
         "numpy",
         "pandas",
         "matplotlib",
+        "tqdm",
+        "beartype",
+        "matplotlib",
+        "scanpy",
+        "scipy"
         ]
 )
