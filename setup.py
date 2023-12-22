@@ -1,18 +1,8 @@
 """"PEAK-QC a quality control tool for ATAC-seq data"""
 
 from setuptools import setup
-from setuptools import find_namespace_packages
 import re
 import os
-import glob
-
-# Find all packages in peakqc
-packages = find_namespace_packages("peakqc")
-packages = ["peakqc." + package for package in packages]
-
-# find top level scripts
-#modules = glob.glob("peakqc/*.py")
-#modules = [m.replace("/", ".")[:-3] for m in modules if not m.endswith("__init__.py")]
 
 def find_version(f: str) -> str:
     """
@@ -46,7 +36,7 @@ setup(
     description='Module for quality control of ATAC-seq data',
     version=find_version(os.path.join("peakqc", "_version.py")),
     license='MIT',
-    packages=packages,
+    packages=['peakqc'],
     python_requires='>=3.9',
     install_requires=[
         "numpy",
@@ -56,6 +46,7 @@ setup(
         "beartype",
         "matplotlib",
         "episcanpy",
+        "scanpy",
         "scipy"
         ]
 )

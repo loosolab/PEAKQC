@@ -13,11 +13,10 @@ from beartype.typing import Optional, Literal, SupportsFloat
 from beartype import beartype
 import numpy.typing as npt
 
-import peakqc.tools as tools
-import peakqc.utils as utils  # save_figure()
+import peakqc.insertsizes as insertsizes
+import peakqc.general as utils  # save_figure()
 
-import sctoolbox.utils.decorator as deco
-from sctoolbox._settings import settings
+
 logger = settings.logger
 
 
@@ -1112,7 +1111,7 @@ def add_fld_metrics(adata: sc.AnnData,
         #count_table = tools._insertsize_from_bam(bam, barcode_tag=barcode_tag, regions=regions, barcodes=adata_barcodes)
 
     elif fragments is not None:
-        count_table = tools.insertsize_from_fragments(fragments, barcodes=adata_barcodes)
+        count_table = insertsizes.insertsize_from_fragments(fragments, barcodes=adata_barcodes)
 
     # get the fragment length distribution
     dist = get_dist_df(count_table)
