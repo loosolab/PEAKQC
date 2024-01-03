@@ -46,6 +46,7 @@ setup(
         "beartype",
         "matplotlib",
         "scanpy",
+        "pysam",
         "scipy"
         ]
 )
