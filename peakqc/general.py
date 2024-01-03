@@ -1,30 +1,49 @@
-import beartype
-from beartype.typing import Optional
+import importlib
 
-import os
-import matplotlib.pyplot as plt
 
-@beartype
-def _save_figure(prefix: str,
-                 path: Optional[str],
-                 dpi: int = 600) -> None:
-    """Save the current figure to a file.
+def _is_gz_file(filepath: str) -> bool:
+    """
+    Check wheather file is a compressed .gz file.
 
     Parameters
     ----------
-    prefix : str
-        Prefix to be used for the file name.
-    path : Optional[str]
-        Path to the file to be saved.
-    dpi : int, default 600
-        Dots per inch. Higher value increases resolution.
+    filepath : str
+        Path to file.
+
+    Returns
+    -------
+    bool
+        True if the file is a compressed .gz file.
     """
 
-    # 'path' can be None if _save_figure was used within a plotting function, and the internal 'save' was "None".
-    # This moves the checking to the _save_figure function rather than each plotting function.
-    if path is None:
-        output_path = os.path.join(os.getcwd(), prefix + ".png")
-        plt.savefig(output_path, dpi=dpi, bbox_inches="tight", facecolor="white")
-    else:
-        output_path = os.path.join(path, prefix + ".png")
-        plt.savefig(output_path, dpi=dpi, bbox_inches="tight", facecolor="white")
+    with open(filepath, 'rb') as test_f:
+        return test_f.read(2) == b'\x1f\x8b'
+
+
+def check_module(module: str) -> None:
+    """
+    Check if <module> can be imported without error.
+
+    Parameters
+    ----------
+    module : str
+        Name of the module to check.
+
+    Raises
+    ------
+    ImportError
+        If the module is not available for import.
+    """
+
+    error = 0
+    try:
+        importlib.import_module(module)
+    except ModuleNotFoundError:
+        error = 1
+    except Exception:
+        raise  # unexpected error loading module
+
+    # Write out error if module was not found
+    if error == 1:
+        s = f"ERROR: Could not find the '{module}' module on path, but the module is needed for this functionality. Please install this package to proceed."
+        raise ImportError(s)

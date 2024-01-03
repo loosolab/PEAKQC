@@ -4,30 +4,11 @@ import gzip
 import datetime
 from multiprocessing import Manager, Lock, Pool
 from tqdm import tqdm
-
+import peakqc.general as utils
 
 from beartype import beartype
 import numpy.typing as npt
 from beartype.typing import Any, Optional
-
-@beartype
-def _is_gz_file(filepath: str) -> bool:
-    """
-    Check wheather file is a compressed .gz file.
-
-    Parameters
-    ----------
-    filepath : str
-        Path to file.
-
-    Returns
-    -------
-    bool
-        True if the file is a compressed .gz file.
-    """
-
-    with open(filepath, 'rb') as test_f:
-        return test_f.read(2) == b'\x1f\x8b'
 
 
 @beartype
@@ -130,7 +111,7 @@ def insertsize_from_fragments(fragments: str,
     """
     print('Count insertsizes from fragments...')
     # Open fragments file
-    if _is_gz_file(fragments):
+    if utils._is_gz_file(fragments):
         f = gzip.open(fragments, "rt")
     else:
         f = open(fragments, "r")
@@ -375,7 +356,7 @@ def _update_dist(dist_1: npt.ArrayLike, dist_2: npt.ArrayLike) -> npt.ArrayLike:
 
 if __name__ == "__main__":
     # Test
-    import episcanpy as epi
+    import scanpy as sc
 
     fragments = "/mnt/workspace2/jdetlef/data/public_data/fragments_heart_left_ventricle_194_sorted.bed"
     h5ad_file = "/mnt/workspace2/jdetlef/data/public_data/heart_lv_SM-JF1NY.h5ad"#
@@ -383,7 +364,7 @@ if __name__ == "__main__":
     # fragments = "/home/jan/Workspace/bio_data/small_fragments.bed"
     #fragments = "/home/jan/Workspace/bio_data/fragments_heart_left_ventricle_194_sorted.bed"
     #h5ad_file = "/home/jan/Workspace/bio_data/heart_lv_SM-JF1NY.h5ad"
-    adata = epi.read_h5ad(h5ad_file)
+    adata = sc.read_h5ad(h5ad_file)
     adata_barcodes = adata.obs.index.tolist()
     # split index for barcodes CBs
     barcodes = []

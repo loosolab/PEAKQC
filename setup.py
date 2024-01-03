@@ -45,7 +45,6 @@ setup(
         "tqdm",
         "beartype",
         "matplotlib",
-        "episcanpy",
         "scanpy",
         "scipy"
         ]

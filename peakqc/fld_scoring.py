@@ -14,10 +14,6 @@ from beartype import beartype
 import numpy.typing as npt
 
 import peakqc.insertsizes as insertsizes
-import peakqc.general as utils  # save_figure()
-
-
-logger = settings.logger
 
 
 @beartype
@@ -1040,7 +1036,6 @@ def get_dist_df(dist: pd.DataFrame) -> pd.DataFrame:
 # ///////////////////////////////////////// final wrapper \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 @beartype
-@deco.log_anndata
 def add_fld_metrics(adata: sc.AnnData,
                     bam: Optional[str] = None,
                     fragments: Optional[str] = None,
