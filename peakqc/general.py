@@ -1,4 +1,7 @@
 import importlib
+from beartype import beartype
+import numpy.typing as npt
+from beartype.typing import Any, Optional, Literal
 
 
 def _is_gz_file(filepath: str) -> bool:
@@ -47,3 +50,44 @@ def check_module(module: str) -> None:
     if error == 1:
         s = f"ERROR: Could not find the '{module}' module on path, but the module is needed for this functionality. Please install this package to proceed."
         raise ImportError(s)
+
+
+@beartype
+def open_bam(file: str,
+             mode: str,
+             verbosity: Literal[0, 1, 2, 3] = 3, **kwargs: Any) -> "pysam.AlignmentFile":
+    """
+    Open bam file with pysam.AlignmentFile. On a specific verbosity level.
+
+    Parameters
+    ----------
+    file : str
+        Path to bam file.
+    mode : str
+        Mode to open the file in. See pysam.AlignmentFile
+    verbosity : Literal[0, 1, 2, 3], default 3
+        Set verbosity level. Verbosity level 0 for no messages.
+    **kwargs : Any
+        Forwarded to pysam.AlignmentFile
+
+    Returns
+    -------
+    pysam.AlignmentFile
+        Object to work on SAM/BAM files.
+    """
+
+    # check then load modules
+    check_module("pysam")
+    import pysam
+
+    # save verbosity, then set temporary one
+    former_verbosity = pysam.get_verbosity()
+    pysam.set_verbosity(verbosity)
+
+    # open file
+    handle = pysam.AlignmentFile(file, mode, **kwargs)
+
+    # return to former verbosity
+    pysam.set_verbosity(former_verbosity)
+
+    return handle

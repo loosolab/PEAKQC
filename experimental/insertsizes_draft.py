@@ -9,6 +9,8 @@ import datetime
 from multiprocessing import Manager, Lock, Pool
 from tqdm import tqdm
 
+import peakqc.general as utils
+
 
 from beartype import beartype
 import numpy.typing as npt
@@ -376,6 +378,98 @@ def _update_dist(dist_1: npt.ArrayLike, dist_2: npt.ArrayLike) -> npt.ArrayLike:
         return dist_2.astype(int)
     elif np.isnan(dist_2).any():
         return dist_1.astype(int)
+
+
+start_run = time.time()
+
+regions = None
+bam = bamfile
+chunk_size = 100000
+n_threads = 10
+barcode_tag = 'CB'
+
+utils.check_module("pysam")
+import pysam
+
+if isinstance(regions, str):
+    regions = [regions]
+
+# Prepare function for checking against barcodes list
+if barcodes is not None:
+    barcodes = set(barcodes)
+    check_in = _check_in_list
+else:
+    check_in = _check_true
+
+# Open bamfile
+print("Opening bam file...")
+if not os.path.exists(bam + ".bai"):
+    print("Bamfile has no index - trying to index with pysam...")
+    pysam.index(bam)
+
+bam_obj = open_bam(bam, "rb", require_index=True)
+chromosome_lengths = dict(zip(bam_obj.references, bam_obj.lengths))
+
+# Create chunked genome regions:
+print(f"Creating chunks of size {chunk_size}bp...")
+
+if regions is None:
+    regions = [f"{chrom}:0-{length}" for chrom, length in chromosome_lengths.items()]
+elif isinstance(regions, str):
+    regions = [regions]
+
+# Create chunks from larger regions
+regions_split = []
+for region in regions:
+    chromosome, start, end = re.split("[:-]", region)
+    start = int(start)
+    end = int(end)
+    for chunk_start in range(start, end, chunk_size):
+        chunk_end = chunk_start + chunk_size
+        if chunk_end > end:
+            chunk_end = end
+        regions_split.append(f"{chromosome}:{chunk_start}-{chunk_end}")
+
+# start timer
+start_time = datetime.datetime.now()
+
+# Count insertsize per chunk using multiprocessing
+print(f"Counting insertsizes across {len(regions_split)} chunks...")
+count_dict = {}
+read_count = 0
+# pbar = tqdm(total=len(regions_split), desc="Progress: ", unit="chunks")
+for region in tqdm(regions_split):
+    chrom, start, end = re.split("[:-]", region)
+    for read in bam_obj.fetch(chrom, int(start), int(end)):
+        read_count += 1
+        try:
+            barcode = read.get_tag(barcode_tag)
+        except Exception:  # tag was not found
+            barcode = "NA"
+
+        # Add read to dict
+        if check_in(barcode, barcodes) is True:
+            size = abs(read.template_length) - 9  # length of insertion
+            count_dict = _add_fragment(count_dict, barcode, size)
+
+        # Close file and print elapsed time
+end_time = datetime.datetime.now()
+bam_obj.close()
+elapsed = end_time - start_time
+print("Done reading file - elapsed time: {0}".format(str(elapsed).split(".")[0]))
+
+# Convert dict to pandas dataframe
+print("Converting counts to dataframe...")
+table = pd.DataFrame.from_dict(count_dict, orient="index")
+# round mean_insertsize to 2 decimals
+table["mean_insertsize"] = table["mean_insertsize"].round(2)
+
+print("Done getting insertsizes from fragments!")
+
+finish_run = time.time()
+
+print(f'Run finished in: {finish_run - start_run}')
+
 
 if __name__ == "__main__":
     # Test
