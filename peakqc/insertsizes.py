@@ -93,7 +93,7 @@ def insertsize_from_fragments(fragments: str,
                               barcodes: Optional[list[str]] = None,
                               n_threads: int = 8) -> pd.DataFrame:
     """
-    Count the insertsizes of fragments in a fragments file and get basic statistics (mean and total count) per barcode.
+    Count the insertsizes of fragments in a fragments file to obtain the insertsize size distribution, beside basic statistics (mean and total count) per barcode.
 
     Parameters
     ----------
@@ -183,7 +183,7 @@ def _count_fragments_worker(chunk: pd.DataFrame,
                             check_in: Any = _check_true,
                             managed_dict: dict = {'output': {}}) -> None:
     """
-    Worker function for counting fragments.
+    Worker function to count fragments from a fragments file.
 
     Parameters
     ----------
@@ -214,13 +214,13 @@ def _count_fragments_worker(chunk: pd.DataFrame,
 
         # Only add fragment if check is true
         if check_in(barcode, barcodes) is True:
-            count_dict = _add_fragment(count_dict, barcode, size, count) # add fragment to count_dict
+            count_dict = _add_fragment(count_dict, barcode, size, count)  # add fragment to count_dict
 
     # Update managed_dict
-    lock.acquire() # acquire lock
+    lock.acquire()  # acquire lock
     latest = managed_dict['output']
-    managed_dict['output'] = _update_count_dict(latest, count_dict) # update managed dict
-    lock.release() # release lock
+    managed_dict['output'] = _update_count_dict(latest, count_dict)  # update managed dict
+    lock.release()  # release lock
 
 
 @beartype
@@ -267,7 +267,7 @@ def _add_fragment(count_dict: dict[str, int],
         # Save to distribution
         if 'dist' not in count_dict[barcode]:  # initialize distribution
             count_dict[barcode]['dist'] = np.zeros(max_size + 1)
-        count_dict[barcode]['dist'][size] += count # add count to distribution
+        count_dict[barcode]['dist'][size] += count  # add count to distribution
 
     return count_dict
 
@@ -346,13 +346,14 @@ def _update_dist(dist_1: npt.ArrayLike, dist_2: npt.ArrayLike) -> npt.ArrayLike:
     """
     # check if both distributions are not empty
     if not np.isnan(dist_1).any() and not np.isnan(dist_2).any():
-        updated_dist = dist_1 + dist_2 # add distributions
+        updated_dist = dist_1 + dist_2  # add distributions
         return updated_dist.astype(int)
     # if one of the distributions is empty, return the other one
     elif np.isnan(dist_1).any():
         return dist_2.astype(int)
     elif np.isnan(dist_2).any():
         return dist_1.astype(int)
+    
 
 if __name__ == "__main__":
     # Test
