@@ -451,6 +451,10 @@ def insertsize_from_bam(bamfile: str,
                 size = abs(read.template_length) - 9  # length of insertion
                 count_dict = _add_fragment(count_dict, barcode, size)  # add fragment to count_dict
 
+    # convert count_dict type float to int
+    for barcode in count_dict:
+        count_dict[barcode]['dist'] = count_dict[barcode]['dist'].astype(int)
+        
     # Close file and print elapsed time
     end_time = datetime.datetime.now()
     bam_obj.close()
