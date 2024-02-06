@@ -190,7 +190,7 @@ def _count_fragments_worker(chunk: pd.DataFrame,
     Parameters
     ----------
     chunk : pd.DataFrame
-        Chunk of fragments file.
+        Chunk of the fragments file.
     barcodes : list[str], optional
         List of barcodes to count. If None, all barcodes are counted.
     check_in : Any, default _check_true
@@ -226,7 +226,7 @@ def _count_fragments_worker(chunk: pd.DataFrame,
 
 
 @beartype
-def _add_fragment(count_dict: dict[str, int],
+def _add_fragment(count_dict: dict,
                   barcode: str,
                   size: int,
                   count: int = 1,
@@ -453,8 +453,9 @@ def insertsize_from_bam(bamfile: str,
 
     # convert count_dict type float to int
     for barcode in count_dict:
-        count_dict[barcode]['dist'] = count_dict[barcode]['dist'].astype(int)
-        
+        if 'dist' in count_dict[barcode]:
+            count_dict[barcode]['dist'] = count_dict[barcode]['dist'].astype(int)
+
     # Close file and print elapsed time
     end_time = datetime.datetime.now()
     bam_obj.close()
