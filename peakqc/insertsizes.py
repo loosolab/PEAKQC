@@ -93,6 +93,7 @@ def _custom_callback(error: Exception) -> None:
 @beartype
 def insertsize_from_fragments(fragments: str,
                               barcodes: Optional[list[str]] = None,
+                              chunk_size: int = 5000000,
                               n_threads: int = 8) -> pd.DataFrame:
     """
     Count the insertsizes of fragments in a fragments file to obtain the insertsize size distribution, beside basic statistics (mean and total count) per barcode.
@@ -103,6 +104,8 @@ def insertsize_from_fragments(fragments: str,
         Path to fragments file.
     barcodes : list[str], optional
         List of barcodes to count. If None, all barcodes are counted.
+    chunk_size : int, default 5000000
+        Size of chunks to split the genome into.
     n_threads : int, default 8
         Number of threads to use for multiprocessing.
 
@@ -131,7 +134,7 @@ def insertsize_from_fragments(fragments: str,
                            header=None,
                            names=['chr', 'start', 'stop', 'barcode', 'count'],
                            iterator=True,
-                           chunksize=5000000)
+                           chunksize=chunk_size)
 
     # start timer
     start_time = datetime.datetime.now()

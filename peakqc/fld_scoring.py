@@ -185,8 +185,6 @@ def call_peaks(data: npt.ArrayLike,
         peak_list = job.get()
         peaks.append(peak_list)
 
-    # peaks = np.array(peaks)
-
     return peaks
 
 
@@ -582,7 +580,6 @@ def wavelet_transformation(data: npt.ArrayLike,
     return convolved_data
 
 
-# TODO multithreading
 @beartype
 def wavelet_transform_fld(dists_arr: npt.ArrayLike,
                           wavelengths: Optional[list[int]] = None,
@@ -1001,35 +998,6 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
     return axes
 
 
-def get_dist_df(dist: pd.DataFrame) -> pd.DataFrame:
-    """
-    Return a dataframe of the fragment length distribution.
-    Input is a dataframe of the insertsizes._insertsize_from_fragments function.
-
-    Parameters
-    ----------
-    dist : pd.DataFrame
-        Dataframe of the insertsizes._insertsize_from_fragments function.
-
-    Returns
-    -------
-    pd.DataFrame
-        Dataframe of the fragment length distribution.
-    """
-    # create a dictionary with the barcodes as keys and the distribution as values
-    table_dict = {}
-    for row in dist.iterrows(): # loop over all rows / barcodes
-        barcode = str(row[0]) # get barcode
-        table_dict[barcode] = {} # create a dictionary for the barcode
-
-        for i, counts in enumerate(row[1]['dist']): # loop over all counts
-            table_dict[barcode][i] = counts # add the count to the dictionary
-
-    dist_df = pd.DataFrame(table_dict).T # create a dataframe from the dictionary
-
-    return dist_df
-
-
 # ///////////////////////////////////////// final wrapper \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 @beartype
@@ -1038,15 +1006,17 @@ def add_fld_metrics(adata: sc.AnnData,
                     fragments: Optional[str] = None,
                     barcode_col: Optional[str] = None,
                     barcode_tag: str = "CB",
+                    chunk_size_bam: int = 1000000,
+                    chunk_size_fragments: int = 5000000,
                     regions: Optional[str] = None,
-                    peaks_thr_conv: SupportsFloat = 1,
+                    peaks_thr: SupportsFloat = 0.5,
                     wavelength: int = 150,
                     sigma: float = 0.4,
                     plot: bool = True,
                     save_density: Optional[str] = None,
                     save_overview: Optional[str] = None,
-                    plot_sample: int = 0,
-                    n_threads: int = 12) -> sc.AnnData:
+                    sample: int = 0,
+                    n_threads: int = 8) -> sc.AnnData:
     """
     Add insert size metrics to an AnnData object.
 
@@ -1067,9 +1037,13 @@ def add_fld_metrics(adata: sc.AnnData,
         Name of the column in the adata.obs dataframe that contains the barcodes.
     barcode_tag : str, default 'CB'
         Name of the tag in the bam file that contains the barcodes.
+    chunk_size_bam : int, default 1000000
+        Chunksize for the bam file.
+    chunk_size_fragments : int, default 5000000
+        Chunksize for the fragments file.
     regions : str, default None
         Path to bed file containing regions to calculate insert size metrics for.
-    peaks_thr_conv : float, default 1
+    peaks_thr : float, default 0.5
         Threshold for the convolution method.
     wavelength : int, default 150
         Wavelength for the convolution method.
@@ -1077,9 +1051,11 @@ def add_fld_metrics(adata: sc.AnnData,
         Sigma for the convolution method.
     plot : bool, default True
         If true, plots are generated.
-    save_plots : bool, default False
-        If true, plots are saved.
-    plot_sample : int, default 0
+    save_density : str, default None
+        If not None, the density plot is saved as a .png file.
+    save_overview : str, default None
+        If not None, the overview plot is saved as a .png file.
+    sample : int, default 0
         Index of the sample to plot.
     n_threads : int, default 12
         Number of threads.
@@ -1094,54 +1070,67 @@ def add_fld_metrics(adata: sc.AnnData,
     ValueError:
         If bam and fragment parameter is not None.
     """
-
-    adata_barcodes = adata.obs.index.tolist() if barcode_col is None else adata.obs[barcode_col].tolist()
+    if barcode_col:
+        adata_barcodes = adata.obs[barcode_col].tolist()
+    else:
+        adata_barcodes = adata.obs.index.tolist()
 
     if bam is not None and fragments is not None:
         raise ValueError("Please provide either a bam file or a fragments file - not both.")
 
-    #elif bam is not None:
-        #count_table = tools._insertsize_from_bam(bam, barcode_tag=barcode_tag, regions=regions, barcodes=adata_barcodes)
+    elif bam is not None:
+        count_table = insertsizes.insertsize_from_bam(bamfile=bam,
+                                                      barcodes=adata_barcodes,
+                                                      barcode_tag=barcode_tag,
+                                                      chunk_size=chunk_size_bam,
+                                                      regions=regions)
 
     elif fragments is not None:
-        count_table = insertsizes.insertsize_from_fragments(fragments, barcodes=adata_barcodes)
+        count_table = insertsizes.insertsize_from_fragments(fragments=fragments,
+                                                            barcodes=adata_barcodes,
+                                                            chunk_size=chunk_size_fragments,
+                                                            n_threads=8)
 
-    # get the fragment length distribution
-    dist = get_dist_df(count_table)
-    # remove all rows containing only 0
-    filtered_dist = dist.loc[~(dist == 0).all(axis=1)]
-    # extract available barcodes
-    barcodes = filtered_dist.index.to_numpy()
-    # get numpy array for calculation
-    dists_arr = filtered_dist.to_numpy()
+    # get the mean insert size and the insert size counts separately
+    means = count_table.pop('mean_insertsize')
+    insert_counts = count_table.pop('insertsize_count')
+
+    # get the barcodes from the count_table, which are the index and will be used to match the barcodes of the adata
+    barcodes = count_table.index
+    # convert the count_table to an array with the dtype int64
+    dists_arr = np.array(count_table['dist'].tolist(), dtype=np.int64)
 
     # plot the densityplot of the fragment length distribution
     if plot:
         print("plotting density...")
         density_plot(dists_arr, max_abundance=600, save=save_density)
 
+    # calculate scores using the convolution method
     print("calculating scores using the custom continues wavelet transformation...")
     conv_scores = score_by_conv(data=dists_arr,
                                 wavelength=wavelength,
                                 sigma=sigma,
                                 plot_wavl=plot,
                                 n_threads=n_threads,
-                                peaks_thr=peaks_thr_conv,
+                                peaks_thr=peaks_thr,
                                 operator='bigger',
                                 plot_mask=plot,
                                 plot_ov=plot,
                                 save=save_overview,
-                                sample=plot_sample)
+                                sample=sample)
 
     # create a dataframe with the scores and match the barcodes
-    inserts_df = pd.DataFrame(index=barcodes)
+    inserts_df = pd.DataFrame(data={'fld_score': conv_scores,
+                                    'mean_fragment_size': means,
+                                    'n_fragments': insert_counts},
+                              index=barcodes)
 
-    inserts_df['fld_score'] = conv_scores
-
+    # join the dataframe with the adata
     adata.obs = adata.obs.join(inserts_df)
 
+    # fill NaN values with 0 --> no peaks found
     adata.obs['fld_score'] = adata.obs['fld_score'].fillna(0)
-
-    # adata.obs.rename(columns={'insertsize_count': 'genome_counts'}, inplace=True)
+    adata.obs['mean_fragment_size'] = adata.obs['mean_fragment_size'].fillna(0)
+    adata.obs['n_fragments'] = adata.obs['n_fragments'].fillna(0)
 
     return adata
