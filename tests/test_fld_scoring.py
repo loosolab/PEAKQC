@@ -137,3 +137,6 @@ def test_scale(count_table):
 
     assert np.max(scaled_single) == 1
     assert np.min(scaled_single) == 0
+
+
+def test_get_dist_df(count_tabele):

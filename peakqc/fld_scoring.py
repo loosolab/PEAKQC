@@ -323,7 +323,7 @@ def distances_score(peaks: npt.ArrayLike,
 def score_mask(peaks: npt.ArrayLike,
                convolved_data: npt.ArrayLike,
                plot: bool = False,
-               save: bool = False) -> npt.ArrayLike:
+               save: Optional[str] = None) -> npt.ArrayLike:
     """
     Compute a score for each sample based on the convolved data and the peaks multiplied by a score mask.
 
@@ -376,7 +376,7 @@ def score_mask(peaks: npt.ArrayLike,
 
 @beartype
 def build_score_mask(plot: bool = True,
-                     save: bool = False,
+                     save: Optional[str] = None,
                      mu_list: list[int] = [42, 200, 360, 550],
                      sigma_list: list[int] = [25, 35, 45, 25]) -> npt.ArrayLike:
     """
@@ -422,7 +422,7 @@ def build_score_mask(plot: bool = True,
         ax.set_ylabel('Scoring')
 
         if save:
-            utils._save_figure('score_mask')
+            plt.savefig(save)
 
     return gaussians
 
@@ -463,8 +463,7 @@ def cos_wavelet(wavelength: int = 100,
                 mu: float = 0.0,
                 sigma: float = 0.4,
                 plot: bool = False,
-                save: bool = False,
-                figure_name: str = 'cos_wavelet') -> npt.ArrayLike:
+                save: Optional[str] = None) -> npt.ArrayLike:
     """
     Build a cosine wavelet. The wavelet is a cosine curve multiplied by a Gaussian curve.
 
@@ -516,7 +515,7 @@ def cos_wavelet(wavelength: int = 100,
         ax.set_ylabel('Amplitude')
 
         if save:
-            utils._save_figure(figure_name)
+            plt.savefig(save)
 
         # Optionally, to show the figure
         plt.show()
@@ -680,7 +679,7 @@ def score_by_conv(data: npt.ArrayLike,
                   operator: str = 'bigger',
                   plot_mask: bool = False,
                   plot_ov: bool = True,
-                  save: bool = False,
+                  save: Optional[str] = None,
                   sample: int = 0) -> npt.ArrayLike:
     """
     Get a score by a continues wavelet transformation based convolution of the distribution with a single wavelet and score mask.
@@ -725,7 +724,7 @@ def score_by_conv(data: npt.ArrayLike,
     scores = score_mask(peaks, convolved_data, plot=plot_mask)
 
     if plot_ov:
-        plot_custom_conv(convolved_data, data, filtered_peaks, scores=scores, sample_n=sample, save=save, figure_name='convolution_overview')
+        plot_custom_conv(convolved_data, data, filtered_peaks, scores=scores, sample_n=sample, save=save)
 
     return scores
 
@@ -736,8 +735,7 @@ def score_by_conv(data: npt.ArrayLike,
 def density_plot(count_table: npt.ArrayLike,
                  max_abundance: int = 600,
                  target_height: int = 1000,
-                 save: bool = False,
-                 figure_name: str = 'density_plot',
+                 save: Optional[str] = None,
                  colormap: str = 'jet',
                  ax: Optional[matplotlib.axes.Axes] = None,
                  fig: Optional[matplotlib.figure.Figure] = None) -> npt.ArrayLike:
@@ -846,7 +844,7 @@ def density_plot(count_table: npt.ArrayLike,
 
     if main_plot:
         if save:
-            utils._save_figure(figure_name)
+            plt.savefig(save)
 
         plt.show()
 
@@ -859,7 +857,7 @@ def density_plot(count_table: npt.ArrayLike,
 def plot_wavelet_transformation(convolution: npt.ArrayLike,
                                 wavelengths: npt.ArrayLike,
                                 fld: Optional[npt.ArrayLike] = None,
-                                save: bool = False,
+                                save: Optional[str] = None,
                                 figure_name: str = 'wavelet_transformation') -> npt.ArrayLike:
     """
     Plot the wavelet transformation of the fragment length distribution.
@@ -921,7 +919,7 @@ def plot_wavelet_transformation(convolution: npt.ArrayLike,
 
     # Save the figure
     if save:
-        utils._save_figure(figure_name)
+        plt.savefig(save)
 
     plt.show()
 
@@ -936,8 +934,7 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
                      peaks: npt.ArrayLike,
                      scores: npt.ArrayLike,
                      sample_n: int = 0,
-                     save: bool = False,
-                     figure_name: str = 'overview') -> npt.ArrayLike:
+                     save: Optional[str] = None) -> npt.ArrayLike:
     """
     Plot the overlay of the convolved data, the peaks and the score mask.
 
@@ -995,7 +992,7 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
     plt.tight_layout()
 
     if save:
-        utils._save_figure(figure_name)
+        plt.savefig(save)
 
     plt.show()
 
@@ -1046,7 +1043,8 @@ def add_fld_metrics(adata: sc.AnnData,
                     wavelength: int = 150,
                     sigma: float = 0.4,
                     plot: bool = True,
-                    save_plots: bool = False,
+                    save_density: Optional[str] = None,
+                    save_overview: Optional[str] = None,
                     plot_sample: int = 0,
                     n_threads: int = 12) -> sc.AnnData:
     """
@@ -1119,10 +1117,10 @@ def add_fld_metrics(adata: sc.AnnData,
 
     # plot the densityplot of the fragment length distribution
     if plot:
-        logger.info("plotting density...")
-        density_plot(dists_arr, max_abundance=600, save=save_plots)
+        print("plotting density...")
+        density_plot(dists_arr, max_abundance=600, save=save_density)
 
-    logger.info("calculating scores using the custom continues wavelet transformation...")
+    print("calculating scores using the custom continues wavelet transformation...")
     conv_scores = score_by_conv(data=dists_arr,
                                 wavelength=wavelength,
                                 sigma=sigma,
@@ -1132,7 +1130,7 @@ def add_fld_metrics(adata: sc.AnnData,
                                 operator='bigger',
                                 plot_mask=plot,
                                 plot_ov=plot,
-                                save=save_plots,
+                                save=save_overview,
                                 sample=plot_sample)
 
     # create a dataframe with the scores and match the barcodes
