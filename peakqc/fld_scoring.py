@@ -343,7 +343,10 @@ def score_mask(peaks: npt.ArrayLike,
     """
 
     # build score mask
-    score_mask = build_score_mask(plot=plot, save=save)
+    if plot:
+        score_mask,_ = build_score_mask(plot=plot, save=save)
+    else:
+        score_mask = build_score_mask(plot=plot, save=save)
 
     scores = []
     # loop over all cells
@@ -373,10 +376,10 @@ def score_mask(peaks: npt.ArrayLike,
 
 
 @beartype
-def build_score_mask(plot: bool = True,
+def build_score_mask(plot: bool = False,
                      save: Optional[str] = None,
                      mu_list: list[int] = [42, 200, 360, 550],
-                     sigma_list: list[int] = [25, 35, 45, 25]) -> npt.ArrayLike:
+                     sigma_list: list[int] = [25, 35, 45, 25]) -> npt.ArrayLike | tuple[npt.ArrayLike, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]:
     """
     Build a score mask for the score by custom continuous wavelet transformation.
 
@@ -422,13 +425,16 @@ def build_score_mask(plot: bool = True,
         if save:
             plt.savefig(save)
 
+        return gaussians, (fig, ax)
+
     return gaussians
 
 
 @beartype
+@beartype
 def gauss(x: npt.ArrayLike,
-          mu: float,
-          sigma: float) -> float:
+          mu: int | float,
+          sigma: int | float) -> npt.ArrayLike:
     """
     Calculate the values of the Gaussian function for a given x, mu and sigma.
 
@@ -456,10 +462,10 @@ def gauss(x: npt.ArrayLike,
 
 @beartype
 def cos_wavelet(wavelength: int = 100,
-                amplitude: float = 1.0,
+                amplitude: float | int = 1.0,
                 phase_shift: int = 0,
-                mu: float = 0.0,
-                sigma: float = 0.4,
+                mu: float | int = 0.0,
+                sigma: float | int = 0.4,
                 plot: bool = False,
                 save: Optional[str] = None) -> npt.ArrayLike:
     """
