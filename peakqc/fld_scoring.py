@@ -463,11 +463,11 @@ def gauss(x: npt.ArrayLike,
 @beartype
 def cos_wavelet(wavelength: int = 100,
                 amplitude: float | int = 1.0,
-                phase_shift: int = 0,
+                phase_shift: float | int = 0,
                 mu: float | int = 0.0,
                 sigma: float | int = 0.4,
                 plot: bool = False,
-                save: Optional[str] = None) -> npt.ArrayLike:
+                save: Optional[str] = None) -> npt.ArrayLike | tuple[npt.ArrayLike, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]:
     """
     Build a cosine wavelet. The wavelet is a cosine curve multiplied by a Gaussian curve.
 
@@ -523,6 +523,8 @@ def cos_wavelet(wavelength: int = 100,
 
         # Optionally, to show the figure
         plt.show()
+
+        return wavelet, (fig, ax)
 
     return wavelet
 

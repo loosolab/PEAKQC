@@ -230,17 +230,20 @@ def test_gauss():
 def test_build_score_mask():
     """Test that the build_score_mask function works as expected."""
 
-    mask, plot_related = fld.build_score_mask(plot=True,
-                                              save=None,
-                                              mu_list=[42, 200, 360, 550],
-                                              sigma_list=[25, 35, 45, 25])
+    mask, figure = fld.build_score_mask(plot=True,
+                                        save='density_plot_test.png',
+                                        mu_list=[42, 200, 360, 550],
+                                        sigma_list=[25, 35, 45, 25])
 
     assert (np.array([42, 200, 360, 549]) == np.concatenate(fld.call_peaks(mask))).all()
 
-    ax_type = type(plot_related[0]).__name__
+    ax_type = type(figure[0]).__name__
     assert ax_type.startswith("Figure")
-    ax_type = type(plot_related[1]).__name__
+    ax_type = type(figure[1]).__name__
     assert ax_type.startswith("Axes")
+
+    assert os.path.isfile('density_plot_test.png')
+    os.remove('density_plot_test.png')
 
     mask = fld.build_score_mask(plot=False,
                                 save=None,
@@ -262,7 +265,75 @@ def test_custom_conv():
 
 def test_cos_wavelet():
     """Test that the cos_wavelet function works as expected."""
-    pass
+    # check for the correct wavelength
+    wav_1 = fld.cos_wavelet(wavelength=100,
+                        amplitude=1.0,
+                        phase_shift=0,
+                        mu=0.0,
+                        sigma=10,
+                        plot=False,
+                        save=None)
+
+    peaks_1 = fld.call_peaks([wav_1])  # call peaks to get the center
+
+    assert 99 == peaks_1[0][1] - peaks_1[0][0]  # check if the wavelength is correct
+    assert 100 == peaks_1[0][2] - peaks_1[0][1]  # check if the wavelength is correct
+
+    # check if the wavelet is centered
+    wav_2 = fld.cos_wavelet(wavelength=100,
+                        amplitude=1.0,
+                        phase_shift=0,
+                        mu=0.0,
+                        sigma=0.4,
+                        plot=False,
+                        save=None)
+
+    peaks_2 = fld.call_peaks([wav_2])  # call peaks to get the center
+    assert np.where(np.max(wav_2) == wav_2)[0][0] == 149  # check if centered
+
+    # check if sigma scales the cosine
+    assert round(wav_1[peaks_1[0][0]] / wav_1[peaks_1[0][1]], 1) == 1
+    assert round(wav_2[peaks_2[0][0]] / wav_2[peaks_2[0][1]], 1) == 0.3
+
+    # check if its shifting
+    wav_3 = fld.cos_wavelet(wavelength=100,
+                        amplitude=1.0,
+                        phase_shift=np.pi,
+                        mu=0.0,
+                        sigma=10,
+                        plot=False,
+                        save=None)
+
+    assert np.where(np.max(wav_3) == wav_3)[0][0] == 100  # half the wavelength shift compared to before
+
+    wav_4 = fld.cos_wavelet(wavelength=100,
+                        amplitude=1.0,
+                        phase_shift=0,
+                        mu=100,
+                        sigma=0.4,
+                        plot=False,
+                        save=None)
+
+    assert np.where(np.max(wav_4) == wav_4)[0][0] == 249  # one wavelength shift for the gauss curve compared to before
+
+    # test if plotting works
+    _, figure = fld.cos_wavelet(wavelength=100,
+                        amplitude=1.0,
+                        phase_shift=0,
+                        mu=0.0,
+                        sigma=10,
+                        plot=True,
+                        save='cos_wavelet_test.png')
+
+    ax_type = type(figure[0]).__name__
+    assert ax_type.startswith("Figure")
+    ax_type = type(figure[1]).__name__
+    assert ax_type.startswith("Axes")
+
+    # test if saving works
+    assert os.path.isfile('cos_wavelet_test.png')
+    os.remove('cos_wavelet_test.png')
+
 
 def test_get_wavelets():
     """Test that the get_wavelet function works as expected."""
