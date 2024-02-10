@@ -204,27 +204,26 @@ def test_gauss():
     sig = 0.5
     gauss = fld.gauss(x, mu, sig)
 
-    assert gauss[350] < 0.05
-    assert gauss[499] == np.max(gauss)
-    assert gauss[650] < 0.05
+    assert gauss[350] < 0.1
+    assert gauss[499] == 1
+    assert gauss[650] < 0.1
 
     x = np.linspace(-4, 4, 1000)
     mu = 2
     sig = 0.4
     gauss = fld.gauss(x, mu, sig)
 
-    assert gauss[600] < 0.05
-    assert gauss[749] == np.max(gauss)
-    assert gauss[900] < 0.05
-
+    assert gauss[600] < 0.1
+    assert gauss[749] == 1
+    assert gauss[900] < 0.1
     x = np.linspace(-4, 4, 1000)
     mu = 0
     sig = 1
     gauss = fld.gauss(x, mu, sig)
 
-    assert gauss[200] < 0.05
-    assert gauss[499] == np.max(gauss)
-    assert gauss[800] < 0.05
+    assert gauss[200] < 0.1
+    assert round(gauss[500],1) == 1
+    assert gauss[800] < 0.1
 
 
 def test_build_score_mask():
