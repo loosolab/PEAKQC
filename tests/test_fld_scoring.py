@@ -267,12 +267,12 @@ def test_cos_wavelet():
     """Test that the cos_wavelet function works as expected."""
     # check for the correct wavelength
     wav_1 = fld.cos_wavelet(wavelength=100,
-                        amplitude=1.0,
-                        phase_shift=0,
-                        mu=0.0,
-                        sigma=10,
-                        plot=False,
-                        save=None)
+                            amplitude=1.0,
+                            phase_shift=0,
+                            mu=0.0,
+                            sigma=10,
+                            plot=False,
+                            save=None)
 
     peaks_1 = fld.call_peaks([wav_1])  # call peaks to get the center
 
@@ -281,12 +281,12 @@ def test_cos_wavelet():
 
     # check if the wavelet is centered
     wav_2 = fld.cos_wavelet(wavelength=100,
-                        amplitude=1.0,
-                        phase_shift=0,
-                        mu=0.0,
-                        sigma=0.4,
-                        plot=False,
-                        save=None)
+                            amplitude=1.0,
+                            phase_shift=0,
+                            mu=0.0,
+                            sigma=0.4,
+                            plot=False,
+                            save=None)
 
     peaks_2 = fld.call_peaks([wav_2])  # call peaks to get the center
     assert np.where(np.max(wav_2) == wav_2)[0][0] == 149  # check if centered
@@ -297,33 +297,33 @@ def test_cos_wavelet():
 
     # check if its shifting
     wav_3 = fld.cos_wavelet(wavelength=100,
-                        amplitude=1.0,
-                        phase_shift=np.pi,
-                        mu=0.0,
-                        sigma=10,
-                        plot=False,
-                        save=None)
+                            amplitude=1.0,
+                            phase_shift=np.pi,
+                            mu=0.0,
+                            sigma=10,
+                            plot=False,
+                            save=None)
 
     assert np.where(np.max(wav_3) == wav_3)[0][0] == 100  # half the wavelength shift compared to before
 
     wav_4 = fld.cos_wavelet(wavelength=100,
-                        amplitude=1.0,
-                        phase_shift=0,
-                        mu=100,
-                        sigma=0.4,
-                        plot=False,
-                        save=None)
+                            amplitude=1.0,
+                            phase_shift=0,
+                            mu=100,
+                            sigma=0.4,
+                            plot=False,
+                            save=None)
 
     assert np.where(np.max(wav_4) == wav_4)[0][0] == 249  # one wavelength shift for the gauss curve compared to before
 
     # test if plotting works
     _, figure = fld.cos_wavelet(wavelength=100,
-                        amplitude=1.0,
-                        phase_shift=0,
-                        mu=0.0,
-                        sigma=10,
-                        plot=True,
-                        save='cos_wavelet_test.png')
+                                amplitude=1.0,
+                                phase_shift=0,
+                                mu=0.0,
+                                sigma=10,
+                                plot=True,
+                                save='cos_wavelet_test.png')
 
     ax_type = type(figure[0]).__name__
     assert ax_type.startswith("Figure")

@@ -431,7 +431,6 @@ def build_score_mask(plot: bool = False,
 
 
 @beartype
-@beartype
 def gauss(x: npt.ArrayLike,
           mu: int | float,
           sigma: int | float) -> npt.ArrayLike:
@@ -454,6 +453,11 @@ def gauss(x: npt.ArrayLike,
     """
 
     gaussian = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
+
+    # scale max to 1
+    max_val = np.max(gaussian)
+    scaler = 1 / max_val
+    gaussian = gaussian * scaler
 
     return gaussian
 
