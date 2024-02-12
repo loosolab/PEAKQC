@@ -92,6 +92,24 @@ def modulation(mus, sigs, divs):
 
 
 @pytest.fixture
+def cosine_modulation():
+    """Create a cosine based modulation curve."""
+
+    def cosine(wavelength, amplitude=1, phase_shift=0):
+        # Scale the wavelength and sigma with the scale
+        wavl_scale = int(wavelength * 1.5)
+        frequency = 1.5 / wavl_scale  # This ensures the frequency is scaled with scale
+
+        x = np.arange(0, 1000)
+
+        return amplitude * np.cos(2 * np.pi * frequency * x + phase_shift)
+
+    cosine_modulation = cosine(25, 0.1) + cosine(150, 0.5) + cosine(75, 0.2) + cosine(100, 0.4)
+
+    return cosine_modulation
+
+
+@pytest.fixture
 def fragment_distributions():
     """Load nucleosomal test data."""
     testdata = np.loadtxt(os.path.join(os.path.dirname(__file__), 'data', 'fld_scoring_related', 'nucleosomal_score.csv'), delimiter=None)
@@ -254,12 +272,23 @@ def test_build_score_mask():
 
 def test_score_mask(good_modulation, bad_modulation):
     """Test that the score_mask function works as expected."""
-    pass
+    good_fit = fld.custom_conv(np.array([good_modulation]))
+    good_peaks = fld.call_peaks(good_fit)
+    good_peaks = fld.filter_peaks(np.array([good_peaks]), reference=np.array([good_modulation]), peaks_thr=0.01, operator="bigger")
+    good_score = fld.score_mask(np.array([good_peaks]), np.array([good_modulation]))
+    bad_fit = fld.custom_conv([bad_modulation])
+    bad_peaks = fld.call_peaks(bad_fit)
+    bad_peaks = fld.filter_peaks(np.array(bad_peaks), reference=np.array([bad_modulation]), peaks_thr=0.01, operator="bigger")
+    bad_score = fld.score_mask(np.array([bad_peaks]), np.array([bad_modulation]))
 
+    assert np.sum(good_score[0]) > np.sum(bad_score[0])
 
-def test_custom_conv():
+def test_custom_conv(good_modulation, bad_modulation):
     """Test that the custom_conv function works as expected."""
-    pass
+    good_fit = fld.custom_conv(good_modulation)
+    bad_fit = fld.custom_conv(bad_modulation)
+
+    assert np.sum(good_fit) > np.sum(bad_fit)
 
 
 def test_cos_wavelet():
@@ -303,7 +332,9 @@ def test_cos_wavelet():
                             plot=False,
                             save=None)
 
-    assert np.where(np.max(wav_3) == wav_3)[0][0] == 100  # half the wavelength shift compared to before
+    peaks_3 = fld.call_peaks([wav_3])  # call peaks to get the center
+    peaks_3[0][0] == 100
+    peaks_3[0][1] == 199  # half the wavelength shift compared to before
 
     wav_4 = fld.cos_wavelet(wavelength=100,
                             amplitude=1.0,
@@ -336,6 +367,20 @@ def test_cos_wavelet():
 
 def test_get_wavelets():
     """Test that the get_wavelet function works as expected."""
-    pass
+    wavelengths = [100, 200, 300]
+    wavelets = fld.get_wavelets(wavelengths, sigma=0.4)
+
+    assert len(wavelets) == 3
+
+
+def test_wavelet_tranformation_fld(cosine_modulation):
+    """Test that the wavelet_tranformation function works as expected."""
+    wavelengths = [25, 50, 75, 100, 125, 150, 175, 200]
+    wav_t = fld.wavelet_transform_fld(dists_arr=[cosine_modulation, cosine_modulation], wavelengths=wavelengths)
+
+    assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][0]], distance=1, width=0)))) == 25
+    assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][2]], distance=1, width=0)))) == 75
+    assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][4]], distance=1, width=0)))) == 100
+    assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][6]], distance=1, width=0)))) == 151
 
 

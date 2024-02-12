@@ -4,7 +4,7 @@ import pandas as pd
 import scanpy as sc
 import matplotlib.pyplot as plt
 import matplotlib
-import tqdm
+from tqdm import tqdm
 import multiprocessing as mp
 from scipy.signal import find_peaks
 from scipy.signal import fftconvolve
@@ -455,9 +455,7 @@ def gauss(x: npt.ArrayLike,
     gaussian = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
     # scale max to 1
-    max_val = np.max(gaussian)
-    scaler = 1 / max_val
-    gaussian = gaussian * scaler
+    gaussian = scale(gaussian)
 
     return gaussian
 
@@ -512,7 +510,9 @@ def cos_wavelet(wavelength: int = 100,
     cosine_curve = amplitude * np.cos(2 * np.pi * frequency * x + phase_shift)
 
     # Compute the Gaussian values for each x
-    gaussian = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
+    gaussian = gauss(x, mu, sigma)
+
+    # Multiply the cosine curve with the Gaussian
     wavelet = cosine_curve * gaussian
 
     if plot:
@@ -866,8 +866,7 @@ def density_plot(count_table: npt.ArrayLike,
 def plot_wavelet_transformation(convolution: npt.ArrayLike,
                                 wavelengths: npt.ArrayLike,
                                 fld: Optional[npt.ArrayLike] = None,
-                                save: Optional[str] = None,
-                                figure_name: str = 'wavelet_transformation') -> npt.ArrayLike:
+                                save: Optional[str] = None) -> npt.ArrayLike:
     """
     Plot the wavelet transformation of the fragment length distribution.
 
