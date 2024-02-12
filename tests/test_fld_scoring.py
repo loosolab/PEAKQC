@@ -9,9 +9,21 @@ import peakqc.insertsizes as ins
 # ------------------------------- Fixtures and data -------------------------------- #
 
 
-# Get the paths to the test data; not as fixtures because they are used in parametrized tests
-fragments = os.path.join(os.path.dirname(__file__), 'data', 'fld_scoring_related', 'mm10_atac_fragments.bed')
-bamfile = os.path.join(os.path.dirname(__file__), 'data', 'fld_scoring_related', 'mm10_atac.bam')
+@pytest.fixture
+def bamfile():
+    """Return path to bam file."""
+    path = os.getcwd()
+
+    return os.path.join(path, 'data/insertsizes_related/heart_left_ventricle_1mio.bam')
+
+
+@pytest.fixture
+def fragments():
+    """Return path to fragment file."""
+    path = os.getcwd()
+    
+    return os.path.join(path, 'data/insertsizes_related/fragments_heart_left_ventricle_head_100k.bed')
+
 
 @pytest.fixture
 def count_table():
@@ -120,7 +132,7 @@ def fragment_distributions():
 @pytest.fixture
 def adata():
     """Fixture for an AnnData object."""
-    adata = sc.read_h5ad(os.path.join(os.path.dirname(__file__), 'data', 'fld_scoring_related', 'mm10_atac.h5ad'))
+    adata = sc.read_h5ad(os.path.join(os.path.dirname(__file__), 'data', 'fld_scoring_related', 'subsetted_adata.h5ad'))
     return adata
 
 
@@ -274,14 +286,14 @@ def test_score_mask(good_modulation, bad_modulation):
     """Test that the score_mask function works as expected."""
     good_fit = fld.custom_conv(np.array([good_modulation]))
     good_peaks = fld.call_peaks(good_fit)
-    good_peaks = fld.filter_peaks(np.array([good_peaks]), reference=np.array([good_modulation]), peaks_thr=0.01, operator="bigger")
-    good_score = fld.score_mask(np.array([good_peaks]), np.array([good_modulation]))
+    good_peaks = fld.filter_peaks(good_peaks, reference=good_fit, peaks_thr=150, operator="bigger")
+    good_score = fld.score_mask(good_peaks, good_fit)
     bad_fit = fld.custom_conv([bad_modulation])
     bad_peaks = fld.call_peaks(bad_fit)
-    bad_peaks = fld.filter_peaks(np.array(bad_peaks), reference=np.array([bad_modulation]), peaks_thr=0.01, operator="bigger")
-    bad_score = fld.score_mask(np.array([bad_peaks]), np.array([bad_modulation]))
+    bad_peaks = fld.filter_peaks(bad_peaks, reference=bad_fit, peaks_thr=150, operator="bigger")
+    bad_score = fld.score_mask(bad_peaks, bad_fit)
 
-    assert np.sum(good_score[0]) > np.sum(bad_score[0])
+    assert good_score[0] > bad_score[0]
 
 def test_custom_conv(good_modulation, bad_modulation):
     """Test that the custom_conv function works as expected."""
@@ -384,3 +396,52 @@ def test_wavelet_tranformation_fld(cosine_modulation):
     assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][6]], distance=1, width=0)))) == 151
 
 
+def test_score_by_conv(good_modulation, bad_modulation):
+    """Test that the score_by_conv function works as expected."""
+    good_score = fld.score_by_conv([good_modulation])
+    bad_score = fld.score_by_conv([bad_modulation])
+
+    assert good_score > bad_score
+
+
+def test_plot_wavelet_transformation(cosine_modulation):
+    """Test that the plot_wavelet_transformation function works as expected."""
+    wavelengths = [25, 50, 75, 100, 125, 150, 175, 200]
+    wav_t = fld.wavelet_transform_fld(dists_arr=[cosine_modulation], wavelengths=wavelengths)
+
+    axes = fld.plot_wavelet_transformation(wav_t[0], wavelengths, cosine_modulation, save='wavelet_transformation_test.png')
+
+    ax_type = type(axes[0]).__name__
+    assert ax_type.startswith("Axes")
+
+    assert os.path.isfile('wavelet_transformation_test.png')
+    os.remove('wavelet_transformation_test.png')
+
+
+def test_plot_custom_conv(good_modulation):
+    """Test that the plot_custom_conv function works as expected."""
+    convolution = fld.custom_conv([good_modulation])
+    peaks = fld.call_peaks(convolution)
+    scores = fld.score_mask(peaks, convolution)
+    axes = fld.plot_custom_conv(convolution, [good_modulation], peaks, scores, save='custom_conv_test.png')
+
+    ax_type = type(axes[0]).__name__
+    assert ax_type.startswith("Axes")
+
+    assert os.path.isfile('custom_conv_test.png')
+    os.remove('custom_conv_test.png')
+
+
+def test_add_fld_metrices(adata, fragments, bamfile):
+    """Test that the add_fld_score function works as expected."""
+    adata = fld.add_fld_metrics(adata, bam=bamfile)
+
+    assert 'fld_score' in adata.obs.columns
+    assert 'mean_fragment_size' in adata.obs.columns
+    assert 'n_fragments' in adata.obs.columns
+
+    adata = fld.add_fld_metrics(adata, fragments=fragments)
+
+    assert 'fld_score' in adata.obs.columns
+    assert 'mean_fragment_size' in adata.obs.columns
+    assert 'n_fragments' in adata.obs.columns
