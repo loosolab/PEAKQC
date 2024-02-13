@@ -44,7 +44,7 @@ setup(
         "matplotlib",
         "tqdm",
         "beartype",
-        "matplotlib<=3.7",
+        "matplotlib<3.7",
         "scanpy",
         "pysam",
         "scipy"
