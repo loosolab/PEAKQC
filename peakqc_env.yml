@@ -4,10 +4,10 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - scanpy
+  - scanpy>=1.9
   - pysam
   - scipy
-  - matplotlib<3.7
+  - matplotlib
   - numpy
   - pandas
   - tqdm
