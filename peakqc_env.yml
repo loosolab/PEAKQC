@@ -7,7 +7,7 @@ dependencies:
   - scanpy
   - pysam
   - scipy
-  - matplotlib
+  - matplotlib<=3.7
   - numpy
   - pandas
   - tqdm
