@@ -21,7 +21,7 @@ def bamfile():
 def fragments():
     """Return path to fragment file."""
     path = os.getcwd()
-    
+
     return os.path.join(path, 'data/insertsizes_related/fragments_heart_left_ventricle_head_100k.bed')
 
 
@@ -434,13 +434,39 @@ def test_plot_custom_conv(good_modulation):
 
 def test_add_fld_metrices(adata, fragments, bamfile):
     """Test that the add_fld_score function works as expected."""
-    adata = fld.add_fld_metrics(adata, bam=bamfile)
+    adata_f = adata.copy()
+    adata_b = adata.copy()
+
+    adata = fld.add_fld_metrics(adata=adata_b,
+                                bam=bamfile,
+                                barcode_col=None,
+                                barcode_tag="CB",
+                                chunk_size_bam=1000000,
+                                regions=None,
+                                peaks_thr=0.5,
+                                wavelength=150,
+                                sigma=0.4,
+                                plot=False,
+                                save_density=None,
+                                save_overview=None,
+                                sample=0)
 
     assert 'fld_score' in adata.obs.columns
     assert 'mean_fragment_size' in adata.obs.columns
     assert 'n_fragments' in adata.obs.columns
 
-    adata = fld.add_fld_metrics(adata, fragments=fragments)
+    adata = fld.add_fld_metrics(adata=adata_f,
+                                fragments=fragments,
+                                barcode_col=None,
+                                chunk_size_fragments=5000000,
+                                peaks_thr=0.5,
+                                wavelength=150,
+                                sigma=0.4,
+                                plot=False,
+                                save_density=None,
+                                save_overview=None,
+                                sample=0,
+                                n_threads=8)
 
     assert 'fld_score' in adata.obs.columns
     assert 'mean_fragment_size' in adata.obs.columns

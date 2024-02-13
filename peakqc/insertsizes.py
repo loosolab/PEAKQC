@@ -471,6 +471,8 @@ def insertsize_from_bam(bamfile: str,
     # round mean_insertsize to 2 decimals
     table["mean_insertsize"] = table["mean_insertsize"].round(2)
 
+    table = table[~pd.isna(table['dist'])]  # remove nan rows
+
     print("Done getting insertsizes from fragments!")
 
     return table

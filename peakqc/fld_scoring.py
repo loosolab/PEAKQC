@@ -660,12 +660,20 @@ def custom_conv(data: npt.ArrayLike,
     """
 
     # Get the wavelet
-    wavelet = cos_wavelet(wavelength=wavelength,
-                          amplitude=1.0,
-                          phase_shift=0,
-                          mu=0.0,
-                          sigma=sigma,
-                          plot=plot_wavl)
+    if plot_wavl:
+        wavelet, _ = cos_wavelet(wavelength=wavelength,
+                                  amplitude=1.0,
+                                  phase_shift=0,
+                                  mu=0.0,
+                                  sigma=sigma,
+                                  plot=plot_wavl)
+    else:
+        wavelet = cos_wavelet(wavelength=wavelength,
+                              amplitude=1.0,
+                              phase_shift=0,
+                              mu=0.0,
+                              sigma=sigma,
+                              plot=plot_wavl)
 
     # convolve with the data
     convolved_data = []
