@@ -11,10 +11,7 @@ import peakqc.insertsizes as insertsizes
 @pytest.fixture
 def barcodes():
     """Return a barcodes file."""
-
-    path = os.getcwd()
-
-    path_barcodes = os.path.join(path, 'data/insertsizes_related/barcodes.txt')
+    path_barcodes = os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', 'barcodes.txt')
 
     with open(path_barcodes, 'r') as file:
         return [line.strip() for line in file]
