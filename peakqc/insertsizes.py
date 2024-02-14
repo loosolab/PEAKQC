@@ -1,3 +1,6 @@
+"""Tools for counting insertsizes from fragments or bam files."""
+# Author: Jan Detleffsen (jan.detleffsen@mpi-bn.mpg.de)
+
 import pandas as pd
 import numpy as np
 import gzip
@@ -15,7 +18,7 @@ from beartype.typing import Any, Optional
 
 @beartype
 def init_pool_processes(the_lock: Any) -> None:
-    '''
+    """
     Initialize each process with a global variable lock.
 
     Parameters
@@ -26,7 +29,7 @@ def init_pool_processes(the_lock: Any) -> None:
     Returns
     -------
     None
-    '''
+    """
     global lock
     lock = the_lock
 
@@ -55,7 +58,7 @@ def _check_in_list(element: Any, alist: list[Any] | set[Any]) -> bool:
 @beartype
 def _check_true(element: Any, alist: Optional[list[Any]] = None) -> bool:  # true regardless of input
     """
-    Return True regardless of input
+    Return True regardless of input.
 
     Parameters
     ----------
@@ -140,9 +143,9 @@ def insertsize_from_fragments(fragments: str,
     start_time = datetime.datetime.now()
 
     # Initialize multiprocessing
-    m = Manager() # initialize manager
-    lock = Lock() # initialize lock
-    managed_dict = m.dict() # initialize managed dict
+    m = Manager()  # initialize manager
+    lock = Lock()  # initialize lock
+    managed_dict = m.dict()  # initialize managed dict
     managed_dict['output'] = {}
     # initialize pool
     pool = Pool(processes=n_threads,
@@ -233,7 +236,7 @@ def _add_fragment(count_dict: dict,
                   barcode: str,
                   size: int,
                   count: int = 1,
-                  max_size: int=1000) -> dict:
+                  max_size: int = 1000) -> dict:
     """
     Add fragment of size 'size' to count_dict.
 
@@ -247,6 +250,8 @@ def _add_fragment(count_dict: dict,
         Insertsize to add to count_dict.
     count : int, default 1
         Number of reads to add to count_dict.
+    max_size : int, default 1000
+        Maximum insertsize to consider.
 
     Returns
     -------
@@ -280,7 +285,7 @@ def _add_fragment(count_dict: dict,
 @beartype
 def _update_count_dict(count_dict_1: dict, count_dict_2: dict) -> dict:
     """
-    Updates the managed dict with the new counts.
+    Update the managed dict with the new counts.
 
     Parameters
     ----------
@@ -335,7 +340,7 @@ def _update_count_dict(count_dict_1: dict, count_dict_2: dict) -> dict:
 @beartype
 def _update_dist(dist_1: npt.ArrayLike, dist_2: npt.ArrayLike) -> npt.ArrayLike:
     """
-    Updates the Insertsize Distributions.
+    Update the Insertsize Distributions.
 
     Parameters
     ----------
@@ -361,10 +366,10 @@ def _update_dist(dist_1: npt.ArrayLike, dist_2: npt.ArrayLike) -> npt.ArrayLike:
 
 
 def insertsize_from_bam(bamfile: str,
-                        barcodes: Optional[list[str]]=None,
-                        barcode_tag='CB',
-                        chunk_size: int=100000,
-                        regions: Optional[list[str]]=None) -> pd.DataFrame:
+                        barcodes: Optional[list[str]] = None,
+                        barcode_tag: Optional[str] = 'CB',
+                        chunk_size: int = 100000,
+                        regions: Optional[list[str]] = None) -> pd.DataFrame:
     """
     Count the insertsizes of fragments in a bam file to obtain the insertsize size distribution, beside basic statistics (mean and total count) per barcode.
 
@@ -372,13 +377,13 @@ def insertsize_from_bam(bamfile: str,
     ----------
     bamfile : str
         Path to bam file.
-    barcodes : list[str], optional
+    barcodes : Optional[list[str]], default None
         List of barcodes to count. If None, all barcodes are counted.
-    barcode_tag : str, default 'CB'
+    barcode_tag : Optional[str], default 'CB'
         Tag in bam file that contains the barcode.
     chunk_size : int, default 100000
         Size of chunks to split the genome into.
-    regions : list[str], optional
+    regions : Optional[list[str]], default None
         List of regions to count. If None, the whole genome is counted.
 
     Returns
@@ -476,25 +481,3 @@ def insertsize_from_bam(bamfile: str,
     print("Done getting insertsizes from fragments!")
 
     return table
-
-
-if __name__ == "__main__":
-    # Test
-    import scanpy as sc
-
-    fragments = "/mnt/workspace2/jdetlef/data/public_data/fragments_heart_left_ventricle_194_sorted.bed"
-    h5ad_file = "/mnt/workspace2/jdetlef/data/public_data/heart_lv_SM-JF1NY.h5ad"#
-
-    # fragments = "/home/jan/Workspace/bio_data/small_fragments.bed"
-    #fragments = "/home/jan/Workspace/bio_data/fragments_heart_left_ventricle_194_sorted.bed"
-    #h5ad_file = "/home/jan/Workspace/bio_data/heart_lv_SM-JF1NY.h5ad"
-    adata = sc.read_h5ad(h5ad_file)
-    adata_barcodes = adata.obs.index.tolist()
-    # split index for barcodes CBs
-    barcodes = []
-    for entry in adata_barcodes:
-        barcode = entry.split('+')[1]
-        barcodes.append(barcode)
-
-    table = insertsize_from_fragments(fragments, barcodes, n_threads=16)
-    print(table)

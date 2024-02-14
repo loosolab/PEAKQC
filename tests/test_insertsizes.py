@@ -1,4 +1,6 @@
 """Test functions of the insertsizes module."""
+# Author: Jan Detleffsen (jan.detleffsen@mpi-bn.mpg.de)
+
 import os
 
 import numpy as np

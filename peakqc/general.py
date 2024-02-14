@@ -1,7 +1,8 @@
+"""General utility functions for the peakqc package."""
+
 import importlib
 from beartype import beartype
-import numpy.typing as npt
-from beartype.typing import Any, Optional, Literal
+from beartype.typing import Any, Literal
 
 
 def _is_gz_file(filepath: str) -> bool:
@@ -55,7 +56,7 @@ def check_module(module: str) -> None:
 @beartype
 def open_bam(file: str,
              mode: str,
-             verbosity: Literal[0, 1, 2, 3] = 3, **kwargs: Any) -> "pysam.AlignmentFile":
+             verbosity: Literal[0, 1, 2, 3] = 3, **kwargs: Any) -> Any:
     """
     Open bam file with pysam.AlignmentFile. On a specific verbosity level.
 

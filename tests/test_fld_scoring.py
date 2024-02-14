@@ -1,3 +1,5 @@
+"""Test functions of the fld_scoring module."""
+# Author: Jan Detleffsen (jan.detleffsen@mpi-bn.mpg.de)
 
 import pytest
 import os
