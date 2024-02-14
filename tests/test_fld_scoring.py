@@ -26,7 +26,7 @@ def fragments():
 
 
 @pytest.fixture
-def count_table():
+def count_table(fragments):
     """Return fragment count table."""
     pre_table = ins.insertsize_from_fragments(fragments, barcodes=None)
 
