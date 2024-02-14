@@ -71,7 +71,7 @@ test coverage:
   coverage: '/TOTAL.*\s(\d*.\d*\%)/'
   script:
     - pip install .
-    - pytest --cov-report=term --cov=./ . --junitxml=pytest.xml --cov-report html:htmlcov --html=pytest.html --durations=0  # durations=0 shows the ranked duration of all tests for improving compute time
+    - pytest --cov-report=term --cov=./peakqc . --junitxml=pytest.xml --cov-report html:htmlcov --html=pytest.html --durations=0  # durations=0 shows the ranked duration of all tests for improving compute time
   artifacts:
     when: always
     paths:
