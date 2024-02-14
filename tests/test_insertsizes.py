@@ -24,36 +24,28 @@ def barcodes():
 def fragments_file():
     """Return a fragments file."""
 
-    path = os.getcwd()
-
-    return os.path.join(path, 'data/insertsizes_related/fragments_heart_left_ventricle_head_100k.bed')
+    return os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', 'fragments_heart_left_ventricle_head_100k.bed')
 
 
 @pytest.fixture
 def bam_file():
     """Return a bam file."""
 
-    path = os.getcwd()
-
-    return os.path.join(path, 'data/insertsizes_related/heart_left_ventricle_1mio.bam')
+    return os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', 'heart_left_ventricle_1mio.bam')
 
 
 @pytest.fixture
 def fragments():
     """Return a fragments file."""
 
-    path = os.getcwd()
-
-    return pd.read_csv(os.path.join(path, 'data/insertsizes_related/fragments_heart_left_ventricle_head_100k.bed'))
+    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', 'fragments_heart_left_ventricle_head_100k.bed'))
 
 
 @pytest.fixture
 def chunk():
     """Return a chunk of a fragments file."""
 
-    path = os.getcwd()
-
-    return pd.read_csv(os.path.join(path, 'data/insertsizes_related/example_chunk.csv'))
+    return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', 'example_chunk.csv'))
 
 
 def test_init_pool_processes():
