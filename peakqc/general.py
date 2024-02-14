@@ -3,8 +3,10 @@
 import importlib
 from beartype import beartype
 from beartype.typing import Any, Literal
+import pysam
 
 
+@beartype
 def _is_gz_file(filepath: str) -> bool:
     """
     Check wheather file is a compressed .gz file.
@@ -24,6 +26,7 @@ def _is_gz_file(filepath: str) -> bool:
         return test_f.read(2) == b'\x1f\x8b'
 
 
+@beartype
 def check_module(module: str) -> None:
     """
     Check if <module> can be imported without error.
@@ -53,9 +56,10 @@ def check_module(module: str) -> None:
         raise ImportError(s)
 
 
+@beartype
 def open_bam(file: str,
              mode: str,
-             verbosity: Literal[0, 1, 2, 3] = 3, **kwargs: Any) -> Any:
+             verbosity: Literal[0, 1, 2, 3] = 3, **kwargs: Any) -> pysam.AlignmentFile:
     """
     Open bam file with pysam.AlignmentFile. On a specific verbosity level.
 
@@ -75,10 +79,6 @@ def open_bam(file: str,
     pysam.AlignmentFile
         Object to work on SAM/BAM files.
     """
-
-    # check then load modules
-    check_module("pysam")
-    import pysam
 
     # save verbosity, then set temporary one
     former_verbosity = pysam.get_verbosity()
