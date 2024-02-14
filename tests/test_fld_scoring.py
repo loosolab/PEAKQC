@@ -12,17 +12,15 @@ import peakqc.insertsizes as ins
 @pytest.fixture
 def bamfile():
     """Return path to bam file."""
-    path = os.getcwd()
 
-    return os.path.join(path, 'data/insertsizes_related/heart_left_ventricle_1mio.bam')
+    return 'data/insertsizes_related/heart_left_ventricle_1mio.bam'
 
 
 @pytest.fixture
 def fragments():
     """Return path to fragment file."""
-    path = os.getcwd()
 
-    return os.path.join(path, 'data/insertsizes_related/fragments_heart_left_ventricle_head_100k.bed')
+    return 'data/insertsizes_related/fragments_heart_left_ventricle_head_100k.bed'
 
 
 @pytest.fixture
