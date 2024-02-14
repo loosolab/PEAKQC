@@ -46,7 +46,7 @@ lint:
     default: false # do not inherit before_script
   stage: test
   tags:
-    - peakqc
+    - coverage
   script:
     - python --version
     - pip install flake8
