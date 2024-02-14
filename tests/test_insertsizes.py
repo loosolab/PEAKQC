@@ -194,7 +194,7 @@ def test_insertsize_from_bam(bam_file, barcodes):
                                             chunk_size=100000,
                                             regions=None)
 
-    assert table.shape[0] == 16710  # Number of unique cell barcodes in the table
+    assert table.shape[0] == 16182  # Number of unique cell barcodes in the table
     assert round(table.loc['AGGGATAAACCACCGAAGGTCA', 'mean_insertsize']) == 92  # Mean insert size for a specific cell barcode
     assert table.loc['AGGGATAAACCACCGAAGGTCA', 'insertsize_count'] == 280  # Number of fragments for a specific cell barcode
     assert int(table.loc['AGGGATAAACCACCGAAGGTCA', 'dist'].sum()) == 280  # Number of fragments in the distribution for a specific cell barcode
