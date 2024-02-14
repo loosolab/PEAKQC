@@ -53,7 +53,6 @@ def check_module(module: str) -> None:
         raise ImportError(s)
 
 
-@beartype
 def open_bam(file: str,
              mode: str,
              verbosity: Literal[0, 1, 2, 3] = 3, **kwargs: Any) -> Any:
