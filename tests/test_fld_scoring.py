@@ -96,7 +96,7 @@ def modulation(mus, sigs, divs):
         curves.append(gaussian(x_values, mu, sig))
 
     curves[1] = curves[1] / divs[0]  # Peak 1
-    curves[1] = curves[1] / divs[1] # Peak 2
+    curves[1] = curves[1] / divs[1]  # Peak 2
     curves[2] = curves[2] / divs[2]  # Bias
     sum_c = np.sum(curves, axis=0)  # Sum of the curves
 
@@ -252,7 +252,7 @@ def test_gauss():
     gauss = fld.gauss(x, mu, sig)
 
     assert gauss[200] < 0.1
-    assert round(gauss[500],1) == 1
+    assert round(gauss[500], 1) == 1
     assert gauss[800] < 0.1
 
 
@@ -294,6 +294,7 @@ def test_score_mask(good_modulation, bad_modulation):
     bad_score = fld.score_mask(bad_peaks, bad_fit)
 
     assert good_score[0] > bad_score[0]
+
 
 def test_custom_conv(good_modulation, bad_modulation):
     """Test that the custom_conv function works as expected."""

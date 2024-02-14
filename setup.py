@@ -1,8 +1,9 @@
-""""PEAK-QC a quality control tool for ATAC-seq data"""
+"""PEAK-QC a quality control tool for ATAC-seq data."""
 
 from setuptools import setup
 import re
 import os
+
 
 def find_version(f: str) -> str:
     """
@@ -38,15 +39,12 @@ setup(
     license='MIT',
     packages=['peakqc'],
     python_requires='>=3.9',
-    install_requires=[
-        "numpy",
-        "pandas",
-        "matplotlib",
-        "tqdm",
-        "beartype",
-        "matplotlib",
-        "scanpy>=1.9",
-        "pysam",
-        "scipy"
-        ]
-)
+    install_requires=["numpy",
+                      "pandas",
+                      "matplotlib",
+                      "tqdm",
+                      "beartype",
+                      "matplotlib",
+                      "scanpy>=1.9",
+                      "pysam",
+                      "scipy"])

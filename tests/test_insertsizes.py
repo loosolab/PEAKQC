@@ -6,7 +6,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-from multiprocessing import Lock, Manager
+from multiprocessing import Lock
 import peakqc.insertsizes as insertsizes
 
 
@@ -67,14 +67,14 @@ def test_check_in_list():
     mock_list = ['ATTGCTAACCGGC', 'ACAAGGCTTGGCA', 'ACGTTGCTTGGCA', 'ACGTTGCTTGGCA']
 
     # Check that the function returns True for a barcode in the list
-    assert insertsizes._check_in_list('ATTGCTAACCGGC', mock_list) == True
+    assert insertsizes._check_in_list('ATTGCTAACCGGC', mock_list) is True
 
 
 def test_check_true():
-
+    """Check the _check_true function."""
     mock_list = ['ATTGCTAACCGGC', 'ACAAGGCTTGGCA', 'ACGTTGCTTGGCA', 'ACGTTGCTTGGCA']
     # check that the function returns True for any input
-    assert insertsizes._check_true('NOT in the LIST', mock_list) == True
+    assert insertsizes._check_true('NOT in the LIST', mock_list) is True
 
 
 def test_custom_callback(capfd):
@@ -119,12 +119,11 @@ def test_add_fragment_counts():
     """Test the add_fragment_counts function."""
 
     # Create a mock dictionary of results
-    count_dict = {'AGGGATAAACCACCGAAGGTCA':
-                 {'mean_insertsize': 140,
-                  'insertsize_count': 38,
-                  'dist': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                                    0., 0., 0., 0., 0., 0., 0., 0., 0., 4., 0., 0., 0., 1., 0., 0., 0.,
-                                    0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])}}
+    count_dict = {'AGGGATAAACCACCGAAGGTCA': {'mean_insertsize': 140,
+                                             'insertsize_count': 38,
+                                             'dist': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                                               0., 0., 0., 0., 0., 0., 0., 0., 0., 4., 0., 0., 0., 1., 0., 0., 0.,
+                                                               0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])}}
 
     # Call the function with the mock dictionary
     count_dict = insertsizes._add_fragment(count_dict=count_dict,
@@ -142,20 +141,17 @@ def test_update_count_dict():
     """Test the update_count_dict function."""
 
     # Create a mock dictionary with a single cell barcode
-    count_dict_1 = {'AGGGATAAACCACCGAAGGTCA':
-                     {'mean_insertsize': 5.5,
-                      'insertsize_count': 2,
-                      'dist': np.array([0., 0., 0., 0., 1., 1., 0., 0., 0., 0.])}}
+    count_dict_1 = {'AGGGATAAACCACCGAAGGTCA': {'mean_insertsize': 5.5,
+                                               'insertsize_count': 2,
+                                               'dist': np.array([0., 0., 0., 0., 1., 1., 0., 0., 0., 0.])}}
 
     # Create a mock dictionary with multiple cell barcodes
-    count_dict_2 = {'AGGGATAAACCACCGAAGGTCA':
-                     {'mean_insertsize': 4.5,
-                      'insertsize_count': 2,
-                      'dist': np.array([0., 0., 0., 1., 1., 0., 0., 0., 0., 0.])},
-                    'AGGGATAAACCACCGAAGGTCC':
-                        {'mean_insertsize': 10,
-                         'insertsize_count': 1,
-                         'dist': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0., 1.])},
+    count_dict_2 = {'AGGGATAAACCACCGAAGGTCA': {'mean_insertsize': 4.5,
+                                               'insertsize_count': 2,
+                                               'dist': np.array([0., 0., 0., 1., 1., 0., 0., 0., 0., 0.])},
+                    'AGGGATAAACCACCGAAGGTCC': {'mean_insertsize': 10,
+                                               'insertsize_count': 1,
+                                               'dist': np.array([0., 0., 0., 0., 0., 0., 0., 0., 0., 1.])},
                     }
 
     # Call the function with the mock dictionaries
@@ -189,7 +185,7 @@ def test_insertsize_from_fragments(fragments_file, barcodes):
 
 
 def test_insertsize_from_bam(bam_file, barcodes):
-
+    """Test the insertsize_from_bam function."""
     table = insertsizes.insertsize_from_bam(bam_file,
                                             barcodes=None,
                                             barcode_tag='CB',
