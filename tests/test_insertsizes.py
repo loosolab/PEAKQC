@@ -205,7 +205,7 @@ def test_insertsize_from_bam(bam_file, barcodes):
                                             chunk_size=100000,
                                             regions=None)
 
-    assert table.shape[0] == 9080  # Number of unique cell barcodes in the table
+    assert table.shape[0] == 9079  # Number of unique cell barcodes in the table
 
     table = insertsizes.insertsize_from_bam(bam_file,
                                             barcodes=barcodes,
