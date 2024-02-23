@@ -14,7 +14,6 @@ Hereby relies PEAKQC on the evaluation of the fragment length distribution.
 While on the bulk level the evaluation is done visually, it is not possible to do that on the single cell level.
 PEAKQC solves this constraint with an convolution based algorithmic approach.
 
--------------------------
 
 # Workflow
 
@@ -22,7 +21,6 @@ To execute the tool an anndata object and fragments, corresponding to the cells 
 
 ![](/figures/PEAKQC_workflow.drawio.png)
 
--------------------------
 
 # Installation
 
