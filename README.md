@@ -1,5 +1,5 @@
 # PEAKQC
---------------------------------------------
+
 Periodicity Evaluation As Key aspect of ATAC-seq Quality Control
 
 A python tool for ATAC-seq quality control in single cells. 
@@ -26,7 +26,13 @@ To execute the tool an anndata object and fragments, corresponding to the cells 
 
 # Installation
 
-## 1. Enviroment & Package Installation
+## PyPi
+```
+pip install peakqc
+```
+## From Source
+
+### 1. Enviroment & Package Installation
 1. Download the repository. This will download the repository to the current directory
 ```
 git@gitlab.gwdg.de:loosolab/software/peakqc.git
@@ -48,7 +54,7 @@ conda activate peakqc
 pip install .
 ```
 
-## 2. Package Installation
+### 2. Package Installation
 1. Download the repository. This will download the repository to the current directory
 ```
 git@gitlab.gwdg.de:loosolab/software/peakqc.git
@@ -62,7 +68,16 @@ cd sc_framework
 pip install .
 ```
 
-# Example
+# Quickstart
+
+Import the `add_fld_metrics()` function from the `fld_scoring` module.
+Assure that the anndata.obs table contains the same barcodes as the provided fragment source. 
+This includes that the barcodes are in the same format.
+
+The anndata.obs column where the barcodes are stored can be specified with the `barcode_col` argument. When the barcodes are the index of the table leave the `barcode_col` argument to be `None`.
+
+Next provide either a bedfile containing the fragments or a bamfile by the `fragments` argument. If available using a bedfile is recommended due to shorter runtime.
+
 ```
 from peakqc.fld_scoring import *
 
