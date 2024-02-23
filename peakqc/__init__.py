@@ -1,1 +1,1 @@
-"""PEAKQC (peakqc)"""
+"""PEAKQC (peakqc)."""
