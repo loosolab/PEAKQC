@@ -8,62 +8,6 @@ import re
 
 
 @beartype
-def is_regex(regex: str) -> bool:
-    """
-    Check if a string is a valid regex.
-
-    Parameters
-    ----------
-    regex : str
-        String to be checked.
-
-    Returns
-    -------
-    bool
-        True if string is a valid regex, False otherwise.
-    """
-
-    try:
-        re.compile(regex)
-        return True
-
-    except re.error:
-        return False
-
-
-@beartype
-def check_file_ending(file: str,
-                      pattern: str = "gtf") -> None:
-    """
-    Check if a file has a certain file ending.
-
-    Parameters
-    ----------
-    file : str
-        Path to the file.
-    pattern : str, default 'gtf'
-        File ending to be checked for.
-        If regex, the regex must match the entire string.
-
-    Returns
-    -------
-    bool
-        True if the file has the correct file ending.
-    """
-
-    valid = False
-    if is_regex:
-        if re.match(pattern, file):
-            valid = True
-
-    else:
-        if file.endswith(pattern):
-            valid = True
-
-    return valid
-
-
-@beartype
 def _is_gz_file(filepath: str) -> bool:
     """
     Check wheather file is a compressed .gz file.

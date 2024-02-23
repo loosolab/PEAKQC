@@ -1091,8 +1091,8 @@ def add_fld_metrics(adata: sc.AnnData,
         raise ValueError("Please provide either a bam file or a fragments file.")
 
     # check if the input is a bam file or a fragments file
-    bam = utils.check_file_ending(file=fragments, pattern="bam")
-    bed = utils.check_file_ending(file=fragments, pattern="bed")
+    bam = fragments.endswith("bam")
+    bed = fragments.endswith("bed")
 
     # raise an error if the file ending is not correct
     if bam is False and bed is False:
