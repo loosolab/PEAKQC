@@ -1016,7 +1016,6 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 
 @beartype
 def add_fld_metrics(adata: sc.AnnData,
-                    bam: Optional[str] = None,
                     fragments: Optional[str] = None,
                     barcode_col: Optional[str] = None,
                     barcode_tag: str = "CB",
@@ -1043,8 +1042,6 @@ def add_fld_metrics(adata: sc.AnnData,
     ----------
     adata : sc.AnnData
         AnnData object to add the insert size metrics to.
-    bam : str, default None
-        Path to bam file.
     fragments : str, default None
         Path to fragments file.
     barcode_col : str, default None
@@ -1089,17 +1086,25 @@ def add_fld_metrics(adata: sc.AnnData,
     else:
         adata_barcodes = adata.obs.index.tolist()
 
-    if bam is not None and fragments is not None:
-        raise ValueError("Please provide either a bam file or a fragments file - not both.")
+    if fragments is None:
+        raise ValueError("Please provide either a bam file or a fragments file.")
 
-    elif bam is not None:
-        count_table = insertsizes.insertsize_from_bam(bamfile=bam,
+    # check if the input is a bam file or a fragments file
+    bam = fragments.endswith("bam")
+    bed = fragments.endswith("bed")
+
+    # raise an error if the file ending is not correct
+    if bam is False and bed is False:
+        raise ValueError("Please provide either a bam file or a fragments file with the correct file ending.")
+
+    if bam:
+        count_table = insertsizes.insertsize_from_bam(bamfile=fragments,
                                                       barcodes=adata_barcodes,
                                                       barcode_tag=barcode_tag,
                                                       chunk_size=chunk_size_bam,
                                                       regions=regions)
 
-    elif fragments is not None:
+    elif bed:
         count_table = insertsizes.insertsize_from_fragments(fragments=fragments,
                                                             barcodes=adata_barcodes,
                                                             chunk_size=chunk_size_fragments,
