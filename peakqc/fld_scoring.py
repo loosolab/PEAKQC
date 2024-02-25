@@ -16,7 +16,6 @@ from beartype import beartype
 import numpy.typing as npt
 
 import peakqc.insertsizes as insertsizes
-import peakqc.general as utils
 
 
 @beartype

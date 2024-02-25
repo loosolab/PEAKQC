@@ -4,7 +4,6 @@ import importlib
 from beartype import beartype
 from beartype.typing import Any, Literal
 import pysam
-import re
 
 
 @beartype
