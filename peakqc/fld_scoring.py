@@ -1035,7 +1035,8 @@ def add_fld_metrics(adata: sc.AnnData,
                     save_density: Optional[str] = None,
                     save_overview: Optional[str] = None,
                     sample: int = 0,
-                    n_threads: int = 8) -> sc.AnnData:
+                    n_threads: int = 8,
+                    return_distributions: bool = False) -> sc.AnnData:
     """
     Add insert size metrics to an AnnData object.
 
@@ -1078,6 +1079,8 @@ def add_fld_metrics(adata: sc.AnnData,
         Index of the sample to plot.
     n_threads : int, default 12
         Number of threads.
+    return_distributions : bool, default False
+        If true, the fragment length distributions are returned.
 
     Returns
     -------
@@ -1152,4 +1155,7 @@ def add_fld_metrics(adata: sc.AnnData,
     adata.obs['mean_fragment_size'] = adata.obs['mean_fragment_size'].fillna(0)
     adata.obs['n_fragments'] = adata.obs['n_fragments'].fillna(0)
 
-    return adata
+    # return distributions if specified
+    if return_distributions:
+        inserts_df["dists"] = dists_arr
+        return inserts_df
