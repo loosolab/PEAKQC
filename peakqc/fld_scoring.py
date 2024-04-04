@@ -1036,7 +1036,7 @@ def add_fld_metrics(adata: sc.AnnData,
                     save_overview: Optional[str] = None,
                     sample: int = 0,
                     n_threads: int = 8,
-                    return_distributions: bool = False) -> sc.AnnData:
+                    return_distributions: bool = False) -> Optional[sc.AnnData]:
     """
     Add insert size metrics to an AnnData object.
 
