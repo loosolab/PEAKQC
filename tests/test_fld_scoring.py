@@ -438,7 +438,7 @@ def test_add_fld_metrices(adata, fragments, bamfile):
     adata_b = adata.copy()
 
     fld.add_fld_metrics(adata=adata_b,
-                        bam=bamfile,
+                        fragments=bamfile,
                         barcode_col=None,
                         barcode_tag="CB",
                         chunk_size_bam=1000000,

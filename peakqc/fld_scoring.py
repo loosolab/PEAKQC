@@ -1021,7 +1021,6 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 
 @beartype
 def add_fld_metrics(adata: sc.AnnData,
-                    bam: Optional[str] = None,
                     fragments: Optional[str] = None,
                     barcode_col: Optional[str] = None,
                     barcode_tag: str = "CB",
@@ -1049,8 +1048,6 @@ def add_fld_metrics(adata: sc.AnnData,
     ----------
     adata : sc.AnnData
         AnnData object to add the insert size metrics to.
-    bam : str, default None
-        Path to bam file.
     fragments : str, default None
         Path to fragments file.
     barcode_col : str, default None
