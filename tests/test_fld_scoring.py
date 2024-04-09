@@ -455,18 +455,18 @@ def test_add_fld_metrices(adata, fragments, bamfile):
     assert 'mean_fragment_size' in adata_b.obs.columns
     assert 'n_fragments' in adata_b.obs.columns
 
-    adata = fld.add_fld_metrics(adata=adata_f,
-                                fragments=fragments,
-                                barcode_col=None,
-                                chunk_size_fragments=5000000,
-                                peaks_thr=0.5,
-                                wavelength=150,
-                                sigma=0.4,
-                                plot=False,
-                                save_density=None,
-                                save_overview=None,
-                                sample=0,
-                                n_threads=8)
+    fld.add_fld_metrics(adata=adata_f,
+                        fragments=fragments,
+                        barcode_col=None,
+                        chunk_size_fragments=5000000,
+                        peaks_thr=0.5,
+                        wavelength=150,
+                        sigma=0.4,
+                        plot=False,
+                        save_density=None,
+                        save_overview=None,
+                        sample=0,
+                        n_threads=8)
 
     assert 'fld_score' in adata_f.obs.columns
     assert 'mean_fragment_size' in adata_f.obs.columns
