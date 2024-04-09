@@ -1,4 +1,6 @@
 """Tools for automated validation of the periodical pattern of scATAC Fragment Length Distributions."""
+# Author: Jan Detleffsen (jan.detleffsen@mpi-bn.mpg.de)
+
 import numpy as np
 import pandas as pd
 import scanpy as sc
@@ -344,7 +346,7 @@ def score_mask(peaks: npt.ArrayLike,
 
     # build score mask
     if plot:
-        score_mask,_ = build_score_mask(plot=plot, save=save)
+        score_mask, _ = build_score_mask(plot=plot, save=save)
     else:
         score_mask = build_score_mask(plot=plot, save=save)
 
@@ -399,8 +401,8 @@ def build_score_mask(plot: bool = False,
 
     Returns
     -------
-    npt.ArrayLike
-        Array of the score mask
+    npt.ArrayLike | tuple[npt.ArrayLike, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]
+        Array of the score mask or tuple of the array and the plot.
     """
 
     # Create an array of x values
@@ -441,15 +443,15 @@ def gauss(x: npt.ArrayLike,
     ----------
     x : npt.ArrayLike
         x values
-    mu : float
+    mu : float | int
         mu value
-    sigma : float
+    sigma : float | int
         sigma value
 
     Returns
     -------
-    float
-        Value of the Gaussian function for the given x, mu and sigma.
+    npt.ArrayLike
+        Array of Gaussian values
     """
 
     gaussian = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
@@ -477,25 +479,24 @@ def cos_wavelet(wavelength: int = 100,
     ----------
     wavelength : int, default 100
         Wavelength of the cosine curve.
-    amplitude : float, default 1.0
+    amplitude : float | int, default 1.0
         Amplitude of the cosine curve.
-    phase_shift : int, default 0
+    phase_shift : float | int, default 0
         Phase shift of the cosine curve.
-    mu : float, default 0.0
+    mu : float | int, default 0.0
         Mean of the Gaussian curve.
-    sigma : float, default 0.4
+    sigma : float | int, default 0.4
         Standard deviation of the Gaussian curve.
     plot : bool, default False
         Plot the wavelet.
-    save : bool, default False
-        Save the plot.
-    figure_name : str, default 'cos_wavelet'
+    save : Optional[str], default None
+        If true, the figure is saved as a .png file.
         Name of the figure to save.
 
     Returns
     -------
-    npt.ArrayLike
-        Array of the wavelet.
+    npt.ArrayLike | tuple[npt.ArrayLike, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]
+        Array of the wavelet or tuple of the array and the plot.
     """
 
     # Scale the wavelength and sigma with the scale
@@ -662,11 +663,11 @@ def custom_conv(data: npt.ArrayLike,
     # Get the wavelet
     if plot_wavl:
         wavelet, _ = cos_wavelet(wavelength=wavelength,
-                                  amplitude=1.0,
-                                  phase_shift=0,
-                                  mu=0.0,
-                                  sigma=sigma,
-                                  plot=plot_wavl)
+                                 amplitude=1.0,
+                                 phase_shift=0,
+                                 mu=0.0,
+                                 sigma=sigma,
+                                 plot=plot_wavl)
     else:
         wavelet = cos_wavelet(wavelength=wavelength,
                               amplitude=1.0,
@@ -769,10 +770,8 @@ def density_plot(count_table: npt.ArrayLike,
         Maximal abundance of a fragment length of a cell (for better visability)
     target_height : int, default 1000
         Target height of the plot
-    save : bool, default False
-        If true, the plot is saved.
-    figure_name : str, default 'density_plot'
-        Name of the figure to save.
+    save : Optional[str], default None
+        If true, the figure is saved under the given name.
     colormap : str, default 'jet'
         Color map of the plot.
     ax : matplotlib.axes.Axes, default None
@@ -888,10 +887,8 @@ def plot_wavelet_transformation(convolution: npt.ArrayLike,
         Wavelengths of the wavelet transformation
     fld : npt.ArrayLike, default None
         Fragment length distribution
-    save : bool, default False
-        If true, the plot is saved.
-    figure_name : str, default 'wavelet_transformation'
-        Name of the figure to save.
+    save : Optional[str], default None
+        If true, the figure is saved under the given name.
 
     Returns
     -------
@@ -956,20 +953,18 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 
     Parameters
     ----------
-    convolved_data : np.array
+    convolved_data : npt.ArrayLike
         Array of the convolved data.
-    data : np.array
+    data : npt.ArrayLike
         Array of the original data.
-    peaks : np.array
+    peaks : npt.ArrayLike
         Array of the peaks.
-    scores : np.array
+    scores : npt.ArrayLike
         Array of the scores.
     sample_n : int, default 0
         Index of the sample to plot.
-    save : bool, default False
-        If true, the plot is saved.
-    figure_name : str, default 'overview'
-        Name of the figure to save.
+    save : Optional[str], default None
+        If true, the figure is saved under the given name.
 
     Returns
     -------
@@ -1021,7 +1016,6 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 
 @beartype
 def add_fld_metrics(adata: sc.AnnData,
-                    bam: Optional[str] = None,
                     fragments: Optional[str] = None,
                     barcode_col: Optional[str] = None,
                     barcode_tag: str = "CB",
@@ -1049,8 +1043,6 @@ def add_fld_metrics(adata: sc.AnnData,
     ----------
     adata : sc.AnnData
         AnnData object to add the insert size metrics to.
-    bam : str, default None
-        Path to bam file.
     fragments : str, default None
         Path to fragments file.
     barcode_col : str, default None
@@ -1097,17 +1089,25 @@ def add_fld_metrics(adata: sc.AnnData,
     else:
         adata_barcodes = adata.obs.index.tolist()
 
-    if bam is not None and fragments is not None:
-        raise ValueError("Please provide either a bam file or a fragments file - not both.")
+    if fragments is None:
+        raise ValueError("Please provide either a bam file or a fragments file.")
 
-    elif bam is not None:
-        count_table = insertsizes.insertsize_from_bam(bamfile=bam,
+    # check if the input is a bam file or a fragments file
+    bam = fragments.endswith("bam")
+    bed = fragments.endswith("bed")
+
+    # raise an error if the file ending is not correct
+    if bam is False and bed is False:
+        raise ValueError("Please provide either a bam file or a fragments file with the correct file ending.")
+
+    if bam:
+        count_table = insertsizes.insertsize_from_bam(bamfile=fragments,
                                                       barcodes=adata_barcodes,
                                                       barcode_tag=barcode_tag,
                                                       chunk_size=chunk_size_bam,
                                                       regions=regions)
 
-    elif fragments is not None:
+    elif bed:
         count_table = insertsizes.insertsize_from_fragments(fragments=fragments,
                                                             barcodes=adata_barcodes,
                                                             chunk_size=chunk_size_fragments,
