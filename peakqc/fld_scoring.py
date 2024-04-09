@@ -9,7 +9,7 @@ import multiprocessing as mp
 from scipy.signal import find_peaks
 from scipy.signal import fftconvolve
 
-from beartype.typing import Optional, Literal, SupportsFloat
+from beartype.typing import Optional, Literal, SupportsFloat, Any
 from beartype import beartype
 import numpy.typing as npt
 
@@ -1036,7 +1036,7 @@ def add_fld_metrics(adata: sc.AnnData,
                     save_overview: Optional[str] = None,
                     sample: int = 0,
                     n_threads: int = 8,
-                    return_distributions: bool = False) -> Optional[sc.AnnData]:
+                    return_distributions: bool = False) -> Any:
     """
     Add insert size metrics to an AnnData object.
 
@@ -1157,5 +1157,5 @@ def add_fld_metrics(adata: sc.AnnData,
 
     # return distributions if specified
     if return_distributions:
-        inserts_df["dists"] = dists_arr
-        return inserts_df
+        inserts_df
+        return inserts_df, dists_arr
