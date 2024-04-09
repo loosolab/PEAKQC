@@ -11,7 +11,7 @@ import multiprocessing as mp
 from scipy.signal import find_peaks
 from scipy.signal import fftconvolve
 
-from beartype.typing import Optional, Literal, SupportsFloat
+from beartype.typing import Optional, Literal, SupportsFloat, Tuple
 from beartype import beartype
 import numpy.typing as npt
 
@@ -1029,7 +1029,8 @@ def add_fld_metrics(adata: sc.AnnData,
                     save_density: Optional[str] = None,
                     save_overview: Optional[str] = None,
                     sample: int = 0,
-                    n_threads: int = 8) -> sc.AnnData:
+                    n_threads: int = 8,
+                    return_distributions: bool = False) -> Optional[Tuple[pd.DataFrame, pd.DataFrame]]:
     """
     Add insert size metrics to an AnnData object.
 
@@ -1070,11 +1071,13 @@ def add_fld_metrics(adata: sc.AnnData,
         Index of the sample to plot.
     n_threads : int, default 12
         Number of threads.
+    return_distributions : bool, default False
+        If true, the fragment length distributions are returned.
 
     Returns
     -------
-    sc.AnnData
-        AnnData object with the insert size metrics added to the adata.obs dataframe.
+    Optional[Tuple[pd.DataFrame, pd.DataFrame]]
+        Dataframe with the insert size metrics and the fragment length distributions.
 
     Raises
     ------
@@ -1152,4 +1155,7 @@ def add_fld_metrics(adata: sc.AnnData,
     adata.obs['mean_fragment_size'] = adata.obs['mean_fragment_size'].fillna(0)
     adata.obs['n_fragments'] = adata.obs['n_fragments'].fillna(0)
 
-    return adata
+    # return distributions if specified
+    if return_distributions:
+        inserts_df
+        return inserts_df, dists_arr
