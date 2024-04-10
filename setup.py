@@ -7,7 +7,7 @@ import os
 
 def find_version(f: str) -> str:
     """
-    Get package version from file.
+    Get package version from version file.
 
     Parameters
     ----------
