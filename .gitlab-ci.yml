@@ -186,7 +186,7 @@ lint:
 # Run test coverage
 test coverage:
   stage: test
-  image: "$CI_REGISTRY_IMAGE:$BUILD_VERSION"
+  image: "$CI_REGISTRY_IMAGE:$DYNAMIC_IMAGE_TAG"
   tags:
     - coverage
   coverage: '/TOTAL.*\s(\d*.\d*\%)/'
