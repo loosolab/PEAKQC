@@ -1030,7 +1030,7 @@ def add_fld_metrics(adata: sc.AnnData,
                     save_overview: Optional[str] = None,
                     sample: int = 0,
                     n_threads: int = 8,
-                    return_distributions: bool = False) -> Optional[Tuple[pd.DataFrame, pd.DataFrame]]:
+                    return_distributions: bool = False) -> Optional[Tuple[pd.DataFrame, npt.ArrayLike]]:
     """
     Add insert size metrics to an AnnData object.
 
