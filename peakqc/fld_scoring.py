@@ -1076,7 +1076,7 @@ def add_fld_metrics(adata: sc.AnnData,
 
     Returns
     -------
-    Optional[Tuple[pd.DataFrame, pd.DataFrame]]
+    Optional[Tuple[pd.DataFrame, npt.ArrayLike]]
         Dataframe with the insert size metrics and the fragment length distributions.
 
     Raises
