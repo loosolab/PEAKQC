@@ -1159,3 +1159,54 @@ def add_fld_metrics(adata: sc.AnnData,
     if return_distributions:
         inserts_df
         return inserts_df, dists_arr
+
+if __name__=='__main__':
+
+    import sctoolbox.utils as utils
+
+    h5ad_file = '/mnt/workspace2/jdetlef/experimental/peakqc_debug/data/anndata/heart_left_ventricle_IOBHO.h5ad'
+    fragment_file = '/mnt/workspace2/jdetlef/experimental/peakqc_debug/data/fragments/fragments_heart_left_ventricle_IOBHO.bed'
+
+    adata = sc.read_h5ad(h5ad_file)
+
+    ## 2. ATAC specific anndata properties
+    # The following settings are used to format the index and coordinate columns
+
+    # Column name(s) of adata.var containing peak location data.
+    # Either a single column (str) or a list of three columns (['chr', 'start', 'end']).
+    coordinate_cols = ['peak_chr', 'peak_start', 'peak_end']
+
+    # when formatting the index, should the prefix be removed
+    remove_var_index_prefix = True
+
+    # provide a name to save the original index, if None it will be overwritten
+    keep_original_index = None
+
+    # regex to format the index
+    coordinate_regex = r"chr[0-9XYM]+[\_\:\-]+[0-9]+[\_\:\-]+[0-9]+"
+
+    adata = utils.assemblers.prepare_atac_anndata(adata,
+                                                  coordinate_cols=coordinate_cols,
+                                                  h5ad_path=h5ad_file,
+                                                  remove_var_index_prefix=remove_var_index_prefix,
+                                                  keep_original_index=keep_original_index,
+                                                  coordinate_regex=coordinate_regex)
+
+    barcode_tag = 'CB'
+
+    add_fld_metrics(adata=adata,
+                    fragments=fragment_file,
+                    barcode_col=None,
+                    barcode_tag=barcode_tag,
+                    chunk_size_bam=1000000,
+                    regions=None,
+                    peaks_thr=10,
+                    wavelength=150,
+                    sigma=0.4,
+                    plot=True,
+                    save_density=None,
+                    save_overview=None,
+                    n_threads=1,
+                    sample=0)
+
+    print(adata.obs.columns)
