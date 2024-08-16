@@ -109,7 +109,7 @@ def test_count_fragments_worker(chunk):
     insertsizes._count_fragments_worker(chunk, managed_dict=insertsizes_dict)
 
     # Check that the dictionary contains the expected results
-    assert len(insertsizes_dict['output']) == 18882  # Number of unique cell barcodes in the chunk
+    assert len(insertsizes_dict['output']) == 18881  # Number of unique cell barcodes in the chunk
     assert round(insertsizes_dict['output']['AGGGATAAACCACCGAAGGTCA']['mean_insertsize']) == 140  # Mean insert size for a specific cell barcode
     assert insertsizes_dict['output']['AGGGATAAACCACCGAAGGTCA']['insertsize_count'] == 38  # Number of fragments for a specific cell barcode
     assert int(insertsizes_dict['output']['AGGGATAAACCACCGAAGGTCA']['dist'].sum()) == 38  # Number of fragments in the distribution for a specific cell barcode

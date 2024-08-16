@@ -259,12 +259,12 @@ def _add_fragment(count_dict: dict,
         Updated count_dict.
     """
 
-    # Initialize if barcode is seen for the first time
-    if barcode not in count_dict:
-        count_dict[barcode] = {"mean_insertsize": 0, "insertsize_count": 0}
-
     # Add read to dict
-    if size > 0 and size <= max_size:  # do not save negative insertsize, and set a cap on the maximum insertsize to limit outlier effects
+    if size > 0 and size <= max_size:  # do not save negative insertsize, and set a cap on the maximum insertsize to limit outlier effects a
+
+        # Initialize if barcode is seen for the first time
+        if barcode not in count_dict:
+            count_dict[barcode] = {"mean_insertsize": 0, "insertsize_count": 0}
 
         count_dict[barcode]["insertsize_count"] += count
 
@@ -311,7 +311,7 @@ def _update_count_dict(count_dict_1: dict, count_dict_2: dict) -> dict:
     combined_dists = df1['dist'].combine(df2['dist'], func=_update_dist)
     # merge counts
     merged_counts = pd.merge(df1["insertsize_count"], df2["insertsize_count"], left_index=True, right_index=True,
-                             how='outer').fillna(0)
+                             how='outer').infer_objects(copy=False).fillna(0)
     # sum total counts/barcode
     updated_counts = merged_counts.sum(axis=1)
 
@@ -321,7 +321,7 @@ def _update_count_dict(count_dict_1: dict, count_dict_2: dict) -> dict:
 
     # merge mean insertsizes
     merged_mean_insertsizes = pd.merge(df1["mean_insertsize"], df2["mean_insertsize"], left_index=True,
-                                       right_index=True, how='outer').fillna(0)
+                                       right_index=True, how='outer').infer_objects(copy=False).fillna(0)
 
     # scale mean insertsizes
     merged_mean_insertsizes["mean_insertsize_x"] = merged_mean_insertsizes["mean_insertsize_x"] * x_scaling_factor
