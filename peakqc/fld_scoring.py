@@ -1163,7 +1163,6 @@ def add_fld_metrics(adata: sc.AnnData,
 
 if __name__ == '__main__':
 
-
     import sctoolbox.utils as utils
 
     h5ad_file = '/mnt/workspace2/jdetlef/experimental/peakqc_debug/data/anndata/heart_left_ventricle_IOBHO.h5ad'
