@@ -1160,7 +1160,9 @@ def add_fld_metrics(adata: sc.AnnData,
         inserts_df
         return inserts_df, dists_arr
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
+
 
     import sctoolbox.utils as utils
 
@@ -1169,7 +1171,7 @@ if __name__=='__main__':
 
     adata = sc.read_h5ad(h5ad_file)
 
-    ## 2. ATAC specific anndata properties
+    # 2. ATAC specific anndata properties
     # The following settings are used to format the index and coordinate columns
 
     # Column name(s) of adata.var containing peak location data.
