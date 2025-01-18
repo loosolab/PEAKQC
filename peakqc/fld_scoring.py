@@ -1030,6 +1030,7 @@ def add_fld_metrics(adata: sc.AnnData,
                     save_overview: Optional[str] = None,
                     sample: int = 0,
                     n_threads: int = 8,
+                    colormap_density: str = 'jet',
                     return_distributions: bool = False) -> Optional[Tuple[pd.DataFrame, npt.ArrayLike]]:
     """
     Add insert size metrics to an AnnData object.
@@ -1071,6 +1072,8 @@ def add_fld_metrics(adata: sc.AnnData,
         Index of the sample to plot.
     n_threads : int, default 12
         Number of threads.
+    colormap_density : str, default 'jet'
+        Colormap for the density plot.
     return_distributions : bool, default False
         If true, the fragment length distributions are returned.
 
@@ -1125,7 +1128,7 @@ def add_fld_metrics(adata: sc.AnnData,
     # plot the densityplot of the fragment length distribution
     if plot:
         print("plotting density...")
-        density_plot(dists_arr, max_abundance=600, save=save_density)
+        density_plot(dists_arr, max_abundance=600, save=save_density, colormap=colormap_density)
 
     # calculate scores using the convolution method
     print("calculating scores using the custom continues wavelet transformation...")
