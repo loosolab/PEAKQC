@@ -1,0 +1,236 @@
+= scATAC-Framework
+:toc:
+
+== Overview
+
+This framework is designed to work with scATAC-seq data in an easy automated way. In our framework we mainly use https://github.com/r3fang/SnapATAC[SnapATAC] and https://github.com/colomemaria/epiScanpy[epiScanpy]. SnapATAC is a mighty R-based tool to work with scATAC-seq data, but in terms of visualizations and filtering epiScanpy, a python based tool handles these tasks much more elegant. Currently we built two pipelines using these tools. The first one is a bashscript based pipeline to preprocess fastq files into h5ad files. The second one is within a jupyter notebook for further preprocessing, clustering and annotation tasks. To use the pipelines easily we built a docker container containing a python and R enviroment and all required dependcies.
+
+== Docker Container
+
+The docker https://gitlab.gwdg.de/loosolab/container/R_snapatac[container] for this framework is based on the R-data-analysis https://gitlab.gwdg.de/loosolab/container/r-data.analysis[container]. This one on the other hand is depending on the rocker/tidyverse container, a Fedora based container to work with Rstudio via browser. Our container extends this R related environment with a python environment and a jupyter notebook server. In terms of software we added SnapATAC, EpiScanpy, Bedtools, MACS and many others to our image. For more information visit https://gitlab.gwdg.de/loosolab/container/R_snapatac .
+
+=== Set up the Container
+
+* Obtain the container
+[,ruby, indent=2]
+----
+docker pull docker.gitlab.gwdg.de/loosolab/container/r_snapatac:latest
+----
+* Run the container
+[,ruby, indent=2]
+----
+docker run -d -p 172.16.30.9:8787:8787 -p 172.16.30.9:8888:8888 -e USERID=$UID -v /path/to/workspace:/home/rstudio/ docker.gitlab.gwdg.de/loosolab/container/r_snapatac:latest
+----
+
+When running the command above you can use the jupyter-notebook or rstudio via browser or attach the container to a bash, to access the filesystem and execute the bash script. Your mounted directory you will find at /home/rstudio inside the container. 
+
+== From Fastq to Anndata
+
+Here we will present in detail the first pipeline of the framework. It is used to preprocess a fastq file and generate a Snap and Anndata file for further processing in SnapATAC or Episcanpy later. To perform these steps the pipeline bashscript fastqToAnndata.sh is used, which can be found in the directory fastq2anndata/.
+
+=== Overview of the Pipeline
+
+image::https://gitlab.gwdg.de/loosolab/software/sc-atac-framework/-/raw/feature-jan/images/snap2AnndataFlowchart.png[]
+
+=== Usage 
+
+==== Additional Packages to install
+
+Additionally you will need an aligner installed into the mounted directory. Per default bwa should be used for the alignment and installed into "(the mounted directory)/biotools/bwa". 
+
+==== Specify Samples
+Generally the samples should be stored in the fastq directory of the data directory. All settings and samples are defined in the fastqToAnndata.sh script, which will be executed to run the pipeline. The data directory is then specified in the parameters part. If you want to process fastq files which are stored somewhere else, simply specify the location using the fastq_dir parameter.
+There are two ways to specify the samples to process: you can define the files to process by command line input or by typing them into the path_array section at the beginning of the script (recommended). The latter way is recommended, you dont have to change any settings and the input syntax is shown in the example below. To use the command line input the parameter CommandLineInput in the parameters part should be set to true. 
+
+==== Parameters
+
+fastq_dir:: `type:` *_String_* + 
+`usage:` should be commented out
+
+data_dir:: `type:` *_String_* + 
+`usage:` specify the directory of the data directory as illustrated previously
+
+genome_input:: `type:` *_String_* + 
+`usage:` specify path to reference genome (including filename)
+
+genome_output_prefix:: `type:` *_String_* + 
+`usage:` specify the prefix of the genome after indexing
+
+aligner:: `type:` *_String_* +
+`usage:` specify which aligner to use
+
+path_to_aligner:: `type:` *_String_* +
+`usage:` specify the path to the aligner installation
+
+commandLineInput:: `type:` *_boolean_* + 
+`usage:` specify if commandLineInput should be used to define samples
+
+*The parameters below specify what parts of the pipeline to execute. As an example, you should not index the genome every run, doing it once should definitely do it. Also intermediate data like alignments or peaks are stored when computated once, the pipeline can continue without generating them again. Anyway if executed again the old files will be overwritten.* 
+
+index_genome:: `type:` *_boolean_* + 
+`usage:` choose if the task index_genome should be done
+
+perform_alignment:: `type:` *_boolean_* + 
+`usage:` choose if the task alignment should be done
+
+build_snapfile:: `type:` *_boolean_* + 
+`usage:` choose if a snap file should be build
+
+run_macs:: `type:` *_boolean_* + 
+`usage:` choose if peak calling should be done
+
+snapAddPMAT:: `type:` *_boolean_* + 
+`usage:` choose if a peaks by cell matrix should be initialised in the snap file
+
+snapAddBMAT:: `type:` *_boolean_* + 
+`usage:` choose if a bin matrix should be initialised in the snap file
+
+image::https://gitlab.gwdg.de/loosolab/software/sc-atac-framework/-/raw/feature-jan/images/fastqToSnapPipelineInputs.png[]
+
+=== Peakcalling
+
+For peak calling we are using MACS2 in future releases this can be changed by the user. The peak calling takes the bam file from the alignment as input and returns a narrowPeak file as well as a cropped bed version to generate a peaks by cell matrix within SnapATAC.
+
+=== Converting a snap File to h5ad
+
+To convert the snap object to an anndata object we use a python script converter.py. This script derives from the notebook snap2anndata.ipynb provided by epiScanpy. Currently it is only possible to carry one matrix at once, so you have to choose between PMAT and BMAT. The default selection is PMAT. To change this you have to open the converter.py and change it in the settings at the bottom. Converting from anndata to snap is not possible yet. 
+
+=== Additional Information
+==== example execution
+* Clone the sc-atac-framework repo
+[,ruby, indent=2]
+----
+git clone https://gitlab.gwdg.de/loosolab/software/sc-atac-framework.git currently branch: develop
+----
+* Run the container
+[,ruby, indent=2]
+----
+docker run -d -p 172.16.30.9:8787:8787 -p 172.16.30.9:8888:8888 -e USERID=$UID -v /path/to/workspace:/home/rstudio/ docker.gitlab.gwdg.de/loosolab/container/r_snapatac:latest
+----
+* Connect the bash to the container
+[,ruby, indent=2]
+----
+docker exec -it 'name of the container' bash
+----
+* Run the pipeline
+[,ruby, indent=2]
+----
+cd sc-atac-framework/fastq2anndata
+#set settings and samples as shown above
+nohup bash fastqToAnndata.sh &
+----
+
+== Set up the framework
+
+To properly use the pipelines you will need to define the path to a directory data. Its structure can be set up automatically by the script fastqToAnndata.sh as illustrated in the scheme below.
+
+image::https://gitlab.gwdg.de/loosolab/software/sc-atac-framework/-/raw/feature-jan/images/data_dir.png[] 
+
+== Preprocess the Data
+This section is about the second pipeline of our framework. The pipeline is for further processing of the data from pipeline 1 including filtering steps, clustering, gene annotation as well as celltype annotation. It is build as a jupyter notebook and can be executed within the docker container, accessing it by browser.
+
+=== Usage
+
+==== Load Data
+The first section of the notebook is about loading the data and to define paths the pipeline depends on later. 
+
+===== Specify required paths 
+
+GTF_PATH:: `type:` *_String_* + 
+`usage:` defines the path of the gene annotation file 
+
+INPUT_PATH:: `type:` *_String_* + 
+`usage:` defines the path of the anndata directory used as input  
+
+OUTPUT_PATH:: `type:` *_String_* + 
+`usage:` defines the path for the output directory 
+
+PEAKS_PATH:: `type:` *_String_* + 
+`usage:` defines the directory to the peak files from pipeline 1 
+
+===== Define tissue sample and necessary files
+
+Example of reading multiple files into one matrix. Adjust for h5ad reading.
+See more at: https://github.com/theislab/scanpy/issues/267
+
+add the names of your anndata .h5ad files,
+the files will be concatenated into one anndata object
+
+filenames:: `type:` *_List of Strings_* + 
+`usage:` Set the sample filenames to process in the run 
+
+SAMPLE:: `type:` *_String_* + 
+`usage:` Name the sample type which will be processed
+
+TISSUE:: `type:` *_String_* + 
+`usage:` For custom celltype annotation
+
+==== Settings
+
+save_figs:: `type:` *_boolean_* + 
+`usage:` True or False; Figures will be saved in directory: path/to/figures
+
+filter_xym:: `type:` *_boolean_* + 
+`usage:` True or False; filtering chrX,chrY and chrM
+
+filter_cells:: `type:` *_boolean:int:int_* + 
+`usage:` True or False:initial minimum number features a cell should have to pass:max number of features
+
+filter_features:: `type:` *_boolean:int:int_* + 
+`usage:` True or False:initial minimum number of cells a feature is found in:max number of cells
+
+save_metadata:: `type:` *_boolean_* + 
+`usage:` True or False; if True, adata.X, .obs and .var will be saved separately
+
+annotate_features:: `type:` *_boolean_* + 
+`usage:` True or False; annotate features with genes using episcanpy
+
+scsa_annotation:: `type:` *_boolean_* + 
+`usage:` True or False; annotate clusters with celltypes using SCSA
+
+custom_annotation:: `type:` *_boolean_* + 
+`usage:` True or False; annotate clusters with celltypes using custom script
+
+=== Overview of the Pipeline
+
+image::https://gitlab.gwdg.de/loosolab/software/sc-atac-framework/-/raw/feature-jan/images/pipeline_episcanpy.png[]
+
+=== Annotation
+
+image::https://gitlab.gwdg.de/loosolab/software/sc-atac-framework/-/raw/feature-jan/images/annotation_pathways.png[]
+
+==== Approaches
+
+Not fully implemented yet. Until now it is possible to use the rank genes feature within Episcanpy and use the score for the annotation script.
+BAM splitting not implemented in this version.
+narrowPeak splitting also not implemented in this Version
+
+==== Gene Annotation
+
+For the gene annotation you can choose between the from house Episcanpy function or UROPA. 
+
+==== Celltype Annotation
+
+For the celltype annotation you can choose between SCSA and a custom annotation script described below.
+
+==== Custom celltype annotation script
+
+image::https://gitlab.gwdg.de/loosolab/software/sc-atac-framework/-/raw/develop/images/ct_annot.drawio.png[]
+
+To perform the cell type annotation we provide a custom script: cell_type_annotation.py +
+The script is using the output of the https://episcanpy.readthedocs.io/en/anna/api/episcanpy.tl.rank_features.html[ranked features function] of episcanpy and the annotated peaks of each cluster. These files can be generated by simply using the jupyter notebook and excecuting the code of the columns "Writing bed files with annotated peaks for each cluster" and "Writing narrowpeaks files for each cluster".
+
+There are six command line parameters: +
+1. output path +
+2. path to the parsed panglao database file +
+3. path to the annotated peaks +
+4. path to the narrow peaks +
+5. type of tissue +
+6. taking connective tissue into account +
+
+Example: python3 cell_type_annotation.py output_path panglao_path annot_path npeaks_path \"gi tract\" T +
+If you don't want to take the connective tissue into account remove the "T" at the end of the line.
+
+The results will be saved into the output path. The "annotation.txt" file contains the cluster numbers and cell types with the highest scores. In the "ranks" folder you can find all potential cell types per cluster. The first column shows a potential cell type, the second the overall score, the third the count of matched marker genes, the fourth the overall marker genes of this cell type and the last one shows the UI (Ubiquitousness Index). The higher the UI the more specific the corresponding genes should be.
+
+The scores are calculated like this: round(sum(peak values) * mean(ub_scores) / gene_count)
