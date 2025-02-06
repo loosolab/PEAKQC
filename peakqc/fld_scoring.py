@@ -1084,7 +1084,7 @@ def add_fld_metrics(adata: sc.AnnData,
 
     Raises
     ------
-    ValueError :
+    ValueError
         If bam and fragment parameter is not None.
     """
     if barcode_col:
