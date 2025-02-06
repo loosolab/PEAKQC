@@ -1150,6 +1150,16 @@ def add_fld_metrics(adata: sc.AnnData,
                                     'n_fragments': insert_counts},
                               index=barcodes)
 
+    # delete old columns to overwrite them
+    columns_to_add = ['fld_score', 'mean_fragment_size', 'n_fragments']
+
+    for column in columns_to_add:
+        if column in adata.obs.columns:
+            adata.obs.pop(column)
+            print(f'overwriting: {column}')
+        else:
+            print(f'add new column: {column}')
+
     # join the dataframe with the adata
     adata.obs = adata.obs.join(inserts_df)
 
