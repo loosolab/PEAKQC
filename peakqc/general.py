@@ -40,6 +40,8 @@ def check_module(module: str) -> None:
     ------
     ImportError
         If the module is not available for import.
+    Exception
+        If an unexpected error occurs while loading the module.
     """
 
     error = 0
