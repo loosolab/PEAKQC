@@ -86,6 +86,10 @@ adata = add_fld_metrics(adata=anndata,
                         save_density=None,
                         save_overview=None,
                         sample=0,
-                        n_threads=8)
+                        n_threads=8,
+                        sample_size=10000,
+                        mc_seed=42,
+                        mc_samples=1000
+                        )
 ```
 
