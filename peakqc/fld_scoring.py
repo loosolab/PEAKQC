@@ -11,15 +11,11 @@ import multiprocessing as mp
 from scipy.signal import find_peaks
 from scipy.signal import fftconvolve
 
-from beartype.typing import Optional, Literal, SupportsFloat, Tuple
+from beartype.typing import Optional, Literal, SupportsFloat, Tuple, Union
 from beartype import beartype
 import numpy.typing as npt
 
 import peakqc.insertsizes as insertsizes
-
-from typing import Tuple, Union
-import multiprocessing as mp
-from multiprocessing import Pool
 
 
 @beartype
@@ -1015,72 +1011,104 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 
     return axes
 
-    
-# ///////////////////////////////////////// sampling for bulk data \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
+# /////////////////////// multinomial sampling \\\\\\\\\\\\\\\\\\\\\\\\\
+@beartype
+def multinomial_sampler(
+        args: Tuple[np.ndarray, np.ndarray, int, int]) -> np.ndarray:
+    """Perform multinomial subsampling.
 
-def multinomial_sampler(args: Tuple[np.ndarray, np.ndarray, int, int]) -> np.ndarray:
+    Parameters
+    ----------
+    args : Arguments parsed by def parallel_multinomial_subsampling function.
+
+    Returns
+    -------
+        np.ndarray
+            subsampled_counts: Subsampled count distributions.
+    """
+    # Unpack parsed args
     dists_arr, subsample_mask, target_size, seed = args
-    
-    np.random.seed(seed + mp.current_process().pid)
-    
-    subsampled_counts = np.zeros_like(dists_arr)
-    
-    for i in np.where(subsample_mask)[0]:
-        probs = dists_arr[i] / dists_arr[i].sum()
-        subsampled_counts[i] = np.random.multinomial(target_size, probs)
-    
-    subsampled_counts[~subsample_mask] = dists_arr[~subsample_mask]
-    
-    return subsampled_counts
-    
 
+    # Random seed for process
+    np.random.seed(seed + mp.current_process().pid)
+
+    # Create array of zeros with the same shape and type as dists_arr
+    subsampled_counts = np.zeros_like(dists_arr)
+
+    # Index dists_array by subsample mask to do the sampling only for
+    # samples larger then the user defined sample_size
+    for i in np.where(subsample_mask)[0]:
+        # Obtain relative frequency of the current sample's count distribution
+        probs = dists_arr[i] / dists_arr[i].sum()
+        # Multinomial sampling with obtained probs
+        subsampled_counts[i] = np.random.multinomial(target_size, probs)
+
+    subsampled_counts[~subsample_mask] = dists_arr[~subsample_mask]
+
+    return subsampled_counts
+
+
+@beartype
 def parallel_multinomial_subsampling(
-    dists_arr: np.ndarray, 
-    insert_counts: Union[np.ndarray, pd.Series], 
-    sample_size: int = 10000, 
-    n_simulations: int = 100, 
-    seed: int = 42, 
+    dists_arr: np.ndarray,
+    insert_counts: Union[np.ndarray, pd.Series],
+    sample_size: int = 10000,
+    n_simulations: int = 100,
+    seed: int = 42,
     n_threads: int = 8
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """Perform parallel multinomial subsampling over multiple simulations.
 
-    """
-    Performs parallel multinomial subsampling over multiple simulations.
-
-    Args:
-        dists_arr (np.ndarray): 
+    Parameters
+    ----------
+        dists_arr (np.ndarray):
             A 2D array where each row represents a probability distribution.
-        insert_counts (np.ndarray): 
+        insert_counts (np.ndarray):
             A 1D array indicating the number of elements per distribution.
-        sample_size (int, optional): 
-            The number of samples to draw per multinomial sampling. Defaults to 10,000.
-        n_simulations (int, optional): 
+        sample_size (int, optional):
+            The number of samples to draw per multinomial sampling.
+            Defaults to 10,000.
+        n_simulations (int, optional):
             The number of independent simulations to run. Defaults to 100.
-        seed (int, optional): 
+        seed (int, optional):
             Random seed for reproducibility. Defaults to 42.
-        n_threads (int, optional): 
+        n_threads (int, optional):
             The number of parallel processes to use. Defaults to 8.
 
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: 
-            - mean_counts (np.ndarray): The mean of the sampled distributions across simulations.
-            - std_counts (np.ndarray): The standard deviation of the sampled distributions across simulations.
+    Returns
+    -------
+        Tuple[np.ndarray, np.ndarray]
+            mean_counts (np.ndarray)
+                The mean of the sampled distributions across simulations.
+            std_counts (np.ndarray)
+                The std of the sampled distributions across simulations.
     """
-    
+    # Create mask to filter samples for which the insert counts are
+    # larger than the user defined sample size, for example, 10,000 (default)
     subsample_mask = insert_counts > sample_size
-    args = [(dists_arr, subsample_mask, sample_size, seed + i) for i in range(n_simulations)]
-    
-    with Pool(processes=n_threads) as pool:
+
+    # Pack args for multinomial sampler with different random seeds
+    args = [(
+        dists_arr,
+        subsample_mask,
+        sample_size,
+        seed + i) for i in range(n_simulations)]
+
+    # Initialize multithread pool
+    with mp.Pool(processes=n_threads) as pool:
+        # Collect results of multinomial sampler
         results = pool.map(multinomial_sampler, args)
 
     subsampled_dists_arr = np.stack(results)
-    
-    # Round mean to int
-    mean_counts = np.round(np.mean(subsampled_dists_arr, axis=0)).astype('int64')
-    std_counts = np.std(subsampled_dists_arr, axis=0)
-    
-    return mean_counts, std_counts
 
+    # Round mean to int and ensure int64 type
+    mean_counts = np.round(
+        np.mean(subsampled_dists_arr, axis=0)
+        ).astype('int64')
+    std_counts = np.std(subsampled_dists_arr, axis=0)
+
+    return mean_counts, std_counts
 
 
 # ///////////////////////////////////////// final wrapper \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -1202,7 +1230,7 @@ def add_fld_metrics(adata: sc.AnnData,
     # convert the count_table to an array with the dtype int64
     dists_arr = np.array(count_table['dist'].tolist(), dtype=np.int64)
 
-    # Monte Carlo Sampling (Optional)
+    # Monte Carlo Multinomial Sampling (Optional)
     if sample_size is not None:
         dists_arr_subsampled, _ = parallel_multinomial_subsampling(
             dists_arr, insert_counts, sample_size=sample_size, n_simulations=mc_samples, seed=mc_seed, n_threads=n_threads

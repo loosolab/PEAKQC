@@ -7,6 +7,8 @@ import scanpy as sc
 import numpy as np
 import peakqc.fld_scoring as fld
 import peakqc.insertsizes as ins
+import multiprocessing as mp
+from peakqc.fld_scoring import multinomial_sampler
 
 # ------------------------------- Fixtures and data -------------------------------- #
 
@@ -472,3 +474,45 @@ def test_add_fld_metrices(adata, fragments, bamfile):
     assert 'fld_score' in adata_f.obs.columns
     assert 'mean_fragment_size' in adata_f.obs.columns
     assert 'n_fragments' in adata_f.obs.columns
+
+
+class MultinomialTester:
+    insert_counts = np.array(
+        [1000, 10000]
+    )
+    dists_arr = np.array([
+        [100, 200, 300, 400],
+        [1000, 2000, 3000, 4000]
+    ])
+
+    sample_size = 1000
+
+    subsample_mask = insert_counts > sample_size
+
+    fake_pid = 42
+
+    seed = 0
+
+    # Mock process id
+    class FakeProcess:
+        pid = 42
+
+    @staticmethod
+    def create_args(dists_arr, subsample_mask, sample_size, seed):
+        return (dists_arr, subsample_mask, sample_size, seed)
+
+    def test_multinomial_sampler(self, monkeypatch):
+        args = self.create_args(self.dists_arr, self.subsample_mask, self.sample_size, self.seed)
+
+        assert np.array_equal(self.subsample_mask, np.array([False, True]))
+
+        # Mock multiprocessing process
+        monkeypatch.setattr(mp, "current_process", lambda: self.FakeProcess())
+        assert mp.current_process().pid == 42
+
+        subsampled_counts = multinomial_sampler(args)
+
+        # Assert shape and row sum
+        assert subsampled_counts.shape == self.dists_arr.shape
+        assert np.array_equal(subsampled_counts[0], self.dists_arr[0])
+        assert np.sum(subsampled_counts[1]) == self.sample_size
