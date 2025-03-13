@@ -1018,16 +1018,22 @@ def multinomial_sampler(
         args: Tuple[npt.ArrayLike, npt.ArrayLike, int, int]) -> npt.ArrayLike:
     """Perform multinomial subsampling.
 
-    Args:
-        args (Tuple[npt.ArrayLike, npt.ArrayLike, int, int]):
+    Parameters
+    ----------
+    args : Tuple[npt.ArrayLike, npt.ArrayLike, int, int]
             A tuple containing:
-            - dists_arr: npt.ArrayLike, The count distribution
-            - subsample_mask: npt.ArrayLike, The number of samples to draw per multinomial sampling
-            - target_size: int, User defined sample size
+            - dists_arr: npt.ArrayLike
+                Array containing the count distributions.
+            - subsample_mask: npt.ArrayLike
+                Mask to sample only arrays with insersize count larger than sample size.
+            - target_size: int
+                The number of samples to draw per multinomial sampling.
             - seed: int, Random seed for reproducibility
 
-    Returns:
-        npt.ArrayLike: Subsampled count distributions.
+    Returns
+    -------
+    npt.ArrayLike
+        Subsampled count distributions.
     """
     # Unpack parsed args
     dists_arr, subsample_mask, target_size, seed = args
@@ -1062,16 +1068,25 @@ def parallel_multinomial_subsampling(
 ) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
     """Perform parallel multinomial subsampling.
 
-    Args:
-        dists_arr (npt.ArrayLike): A 2D array where each row represents a probability distribution.
-        insert_counts (Union[npt.ArrayLike, pd.Series]): A 1D array indicating the number of elements per distribution.
-        sample_size (int, optional): The number of samples to draw per multinomial sampling.. Defaults to 10000.
-        n_simulations (int, optional): The number of independent simulations to run. Defaults to 100. Defaults to 100.
-        seed (int, optional): Random seed for reproducibility. Defaults to 42.
-        n_threads (int, optional): The number of parallel processes to use. Defaults to 8.
+    Parameters
+    ----------
+    dists_arr : npt.ArrayLike
+        A 2D array where each row represents a probability distribution.
+    insert_counts : Union[npt.ArrayLike, pd.Series]
+        A 1D array indicating the number of elements per distribution.
+    sample_size : int, optional
+        The number of samples to draw per multinomial sampling, by default 10000.
+    n_simulations : int, optional
+        The number of independent simulations to run, by default 100
+    seed : int, optional
+        Random seed for reproducibility, by default 42
+    n_threads : int, optional
+        The number of parallel processes to use, by default 8
 
-    Returns:
-        Tuple[npt.ArrayLike, npt.ArrayLike]: Returns the mean and standard deviation of the multinomial sampling.
+    Returns
+    -------
+    Tuple[npt.ArrayLike, npt.ArrayLike]
+        Returns the mean and standard deviation of the multinomial sampling.
     """
     # Create mask to filter samples for which the insert counts are
     # larger than the user defined sample size, for example, 10,000 (default)
@@ -1176,7 +1191,7 @@ def add_fld_metrics(adata: sc.AnnData,
 
     Raises
     ------
-    ValueError:
+    ValueError :
         If bam and fragment parameter is not None.
     """
     if barcode_col:

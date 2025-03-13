@@ -9,7 +9,7 @@ import peakqc.fld_scoring as fld
 import peakqc.insertsizes as ins
 import multiprocessing as mp
 from peakqc.fld_scoring import multinomial_sampler
-
+import numpy.typing as npt
 # ------------------------------- Fixtures and data -------------------------------- #
 
 
@@ -500,25 +500,37 @@ class MultinomialTester:
         pid = 42
 
     @staticmethod
-    def create_args(dists_arr, subsample_mask, sample_size, seed):
+    def create_args(dists_arr: npt.ArrayLike,
+                    subsample_mask: npt.ArrayLike,
+                    sample_size: int,
+                    seed: int) -> npt.ArrayLike:
         """Create the args parsed to multinomial sampler.
 
-        Args:
-            dists_arr (np.darray): Count distribution of fragment lengths
-            subsample_mask (np.array)): Mask to select samples to sample
-            sample_size (int): Sample size for the multinomial sampler
-            seed (int): Random seed for reproducibility
+        Parameters
+        ----------
+        dists_arr : _type_
+            Count distribution of fragment lengths.
+        subsample_mask : _type_
+            Mask to select samples to sample.
+        sample_size : int
+             Sample size for the multinomial sampler.
+        seed : int
+            Random seed for reproducibility.
 
-        Returns:
-            np.array: An array that contains the args to parse.
+        Returns
+        -------
+        _type_
+            Returns array containing all args for multinomial sampler.
         """
         return (dists_arr, subsample_mask, sample_size, seed)
 
     def test_multinomial_sampler(self, monkeypatch):
-        """Test the multinomial sampler.
+        """Test mulitnomial sampler.
 
-        Args:
-            monkeypatch (class): monkeypatch
+        Parameters
+        ----------
+        monkeypatch : class
+            Monkeypatch class used to mock the multiprocessing.
         """
         args = self.create_args(self.dists_arr, self.subsample_mask, self.sample_size, self.seed)
 
