@@ -512,7 +512,7 @@ class MultinomialTester:
 
     def test_multinomial_sampler(self, monkeypatch):      
         """Test mulitnomial sampler."""
-        
+
         args = self.create_args(self.dists_arr, self.subsample_mask, self.sample_size, self.seed)
 
         assert np.array_equal(self.subsample_mask, np.array([False, True]))
