@@ -510,7 +510,7 @@ class MultinomialTester:
 
         return (dists_arr, subsample_mask, sample_size, seed)
 
-    def test_multinomial_sampler(self, monkeypatch):      
+    def test_multinomial_sampler(self, monkeypatch):
         """Test mulitnomial sampler."""
 
         args = self.create_args(self.dists_arr, self.subsample_mask, self.sample_size, self.seed)
