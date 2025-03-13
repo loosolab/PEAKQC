@@ -1015,17 +1015,19 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 # /////////////////////// multinomial sampling \\\\\\\\\\\\\\\\\\\\\\\\\
 @beartype
 def multinomial_sampler(
-        args: Tuple[np.ndarray, np.ndarray, int, int]) -> np.ndarray:
+        args: Tuple[npt.ArrayLike, npt.ArrayLike, int, int]) -> npt.ArrayLike:
     """Perform multinomial subsampling.
 
-    Parameters
-    ----------
-    args : Arguments parsed by def parallel_multinomial_subsampling function.
+    Args:
+        args (Tuple[npt.ArrayLike, npt.ArrayLike, int, int]):
+            A tuple containing:
+            - dists_arr: npt.ArrayLike, The count distribution
+            - subsample_mask: npt.ArrayLike, The number of samples to draw per multinomial sampling
+            - target_size: int, User defined sample size
+            - seed: int, Random seed for reproducibility
 
-    Returns
-    -------
-        np.ndarray
-            subsampled_counts: Subsampled count distributions.
+    Returns:
+        npt.ArrayLike: Subsampled count distributions.
     """
     # Unpack parsed args
     dists_arr, subsample_mask, target_size, seed = args
@@ -1051,38 +1053,25 @@ def multinomial_sampler(
 
 @beartype
 def parallel_multinomial_subsampling(
-    dists_arr: np.ndarray,
-    insert_counts: Union[np.ndarray, pd.Series],
+    dists_arr: npt.ArrayLike,
+    insert_counts: Union[npt.ArrayLike, pd.Series],
     sample_size: int = 10000,
     n_simulations: int = 100,
     seed: int = 42,
     n_threads: int = 8
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Perform parallel multinomial subsampling over multiple simulations.
+) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
+    """Perform parallel multinomial subsampling.
 
-    Parameters
-    ----------
-        dists_arr (np.ndarray):
-            A 2D array where each row represents a probability distribution.
-        insert_counts (np.ndarray):
-            A 1D array indicating the number of elements per distribution.
-        sample_size (int, optional):
-            The number of samples to draw per multinomial sampling.
-            Defaults to 10,000.
-        n_simulations (int, optional):
-            The number of independent simulations to run. Defaults to 100.
-        seed (int, optional):
-            Random seed for reproducibility. Defaults to 42.
-        n_threads (int, optional):
-            The number of parallel processes to use. Defaults to 8.
+    Args:
+        dists_arr (npt.ArrayLike): A 2D array where each row represents a probability distribution.
+        insert_counts (Union[npt.ArrayLike, pd.Series]): A 1D array indicating the number of elements per distribution.
+        sample_size (int, optional): The number of samples to draw per multinomial sampling.. Defaults to 10000.
+        n_simulations (int, optional): The number of independent simulations to run. Defaults to 100. Defaults to 100.
+        seed (int, optional): Random seed for reproducibility. Defaults to 42.
+        n_threads (int, optional): The number of parallel processes to use. Defaults to 8.
 
-    Returns
-    -------
-        Tuple[np.ndarray, np.ndarray]
-            mean_counts (np.ndarray)
-                The mean of the sampled distributions across simulations.
-            std_counts (np.ndarray)
-                The std of the sampled distributions across simulations.
+    Returns:
+        Tuple[npt.ArrayLike, npt.ArrayLike]: Returns the mean and standard deviation of the multinomial sampling.
     """
     # Create mask to filter samples for which the insert counts are
     # larger than the user defined sample size, for example, 10,000 (default)
@@ -1103,9 +1092,7 @@ def parallel_multinomial_subsampling(
     subsampled_dists_arr = np.stack(results)
 
     # Round mean to int and ensure int64 type
-    mean_counts = np.round(
-        np.mean(subsampled_dists_arr, axis=0)
-        ).astype('int64')
+    mean_counts = np.round(np.mean(subsampled_dists_arr, axis=0)).astype('int64')
     std_counts = np.std(subsampled_dists_arr, axis=0)
 
     return mean_counts, std_counts
