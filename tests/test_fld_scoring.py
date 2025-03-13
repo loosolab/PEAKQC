@@ -478,6 +478,7 @@ def test_add_fld_metrices(adata, fragments, bamfile):
 
 class MultinomialTester:
     """Test the multinomial sampler."""
+
     insert_counts = np.array(
         [1000, 10000]
     )
@@ -497,6 +498,7 @@ class MultinomialTester:
     # Mock process id
     class FakeProcess:
         """Create fake process (id)."""
+
         pid = 42
 
     @staticmethod
@@ -504,34 +506,13 @@ class MultinomialTester:
                     subsample_mask: npt.ArrayLike,
                     sample_size: int,
                     seed: int) -> npt.ArrayLike:
-        """Create the args parsed to multinomial sampler.
+        """Create the args parsed to multinomial sampler."""
 
-        Parameters
-        ----------
-        dists_arr : _type_
-            Count distribution of fragment lengths.
-        subsample_mask : _type_
-            Mask to select samples to sample.
-        sample_size : int
-             Sample size for the multinomial sampler.
-        seed : int
-            Random seed for reproducibility.
-
-        Returns
-        -------
-        _type_
-            Returns array containing all args for multinomial sampler.
-        """
         return (dists_arr, subsample_mask, sample_size, seed)
 
-    def test_multinomial_sampler(self, monkeypatch):
-        """Test mulitnomial sampler.
-
-        Parameters
-        ----------
-        monkeypatch : class
-            Monkeypatch class used to mock the multiprocessing.
-        """
+    def test_multinomial_sampler(self, monkeypatch):      
+        """Test mulitnomial sampler."""
+        
         args = self.create_args(self.dists_arr, self.subsample_mask, self.sample_size, self.seed)
 
         assert np.array_equal(self.subsample_mask, np.array([False, True]))
