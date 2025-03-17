@@ -7,9 +7,7 @@ import scanpy as sc
 import numpy as np
 import peakqc.fld_scoring as fld
 import peakqc.insertsizes as ins
-import multiprocessing as mp
-from peakqc.fld_scoring import multinomial_sampler
-import numpy.typing as npt
+from peakqc.fld_scoring import MultithreadedMultinomialSampler
 # ------------------------------- Fixtures and data -------------------------------- #
 
 
@@ -476,54 +474,147 @@ def test_add_fld_metrices(adata, fragments, bamfile):
     assert 'n_fragments' in adata_f.obs.columns
 
 
-class MultinomialTester:
-    """Test the multinomial sampler."""
-
-    insert_counts = np.array(
-        [1000, 10000]
-    )
-    dists_arr = np.array([
-        [100, 200, 300, 400],
-        [1000, 2000, 3000, 4000]
-    ])
-
-    sample_size = 1000
-
-    subsample_mask = insert_counts > sample_size
-
-    fake_pid = 42
-
-    seed = 0
-
-    # Mock process id
-    class FakeProcess:
-        """Create fake process (id)."""
-
-        pid = 42
-
-    @staticmethod
-    def create_args(dists_arr: npt.ArrayLike,
-                    subsample_mask: npt.ArrayLike,
-                    sample_size: int,
-                    seed: int) -> npt.ArrayLike:
-        """Create the args parsed to multinomial sampler."""
-
-        return (dists_arr, subsample_mask, sample_size, seed)
-
-    def test_multinomial_sampler(self, monkeypatch):
-        """Test mulitnomial sampler."""
-
-        args = self.create_args(self.dists_arr, self.subsample_mask, self.sample_size, self.seed)
-
-        assert np.array_equal(self.subsample_mask, np.array([False, True]))
-
-        # Mock multiprocessing process
-        monkeypatch.setattr(mp, "current_process", lambda: self.FakeProcess())
-        assert mp.current_process().pid == 42
-
-        subsampled_counts = multinomial_sampler(args)
-
-        # Assert shape and row sum
-        assert subsampled_counts.shape == self.dists_arr.shape
-        assert np.array_equal(subsampled_counts[0], self.dists_arr[0])
-        assert np.sum(subsampled_counts[1]) == self.sample_size
+class Test_MultithreadedMultinomialSampler:
+    """Test class for MultithreadedMultinomialSampler."""
+    
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Setup test data before each test."""
+        np.random.seed(42)
+        self.dists_arr = np.random.negative_binomial(10, 0.5, size=(3, 10))
+        self.insert_counts = np.sum(self.dists_arr, axis=1)
+        self.reference_dists = self.dists_arr.copy()
+        self.sample_size = 100
+        self.n_threads = 1  # Test container has only one thread
+        
+    def test_shape_mask(self, result_dists, result_std, sample_all=False):
+        """Verify common assertions for all test cases."""
+        # Check shapes
+        assert result_dists.shape == self.reference_dists.shape
+        assert result_std.shape == self.reference_dists.shape
+        
+        if sample_all:
+            # When sample_all=True, all distributions with insert_counts > 0 should be processed
+            mask_all = self.insert_counts > 0
+            for i in np.where(mask_all)[0]:
+                if self.insert_counts[i] > self.sample_size:
+                    # Should be downsampled to sample_size
+                    assert abs(np.sum(result_dists[i]) - self.sample_size) < 10
+                else:
+                    # Should keep original count
+                    assert abs(np.sum(result_dists[i]) - self.insert_counts[i]) < 10
+        else:
+            # Check that only distributions with insert_counts > sample_size are modified
+            mask = self.insert_counts > self.sample_size
+            if np.any(mask):
+                # At least one distribution should be modified
+                assert not np.array_equal(result_dists[mask], self.reference_dists[mask])
+            
+            # Not mask should be unchanged
+            not_mask = ~mask
+            if np.any(not_mask):
+                assert np.array_equal(result_dists[not_mask], self.reference_dists[not_mask])
+    
+    def test_with_size_1(self):
+        """Test with size=1 and sample_all=False."""
+        sampler = MultithreadedMultinomialSampler(
+            dists_arr=self.dists_arr.copy(),
+            insert_counts=self.insert_counts,
+            sample_size=self.sample_size,
+            n_simulations=10,
+            sample_all=False,
+            size=1,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        result_dists, result_std = sampler.sample()
+        self.verify_common_assertions(result_dists, result_std)
+    
+    def test_with_size_5(self):
+        """Test with size=5 and sample_all=False."""
+        sampler = MultithreadedMultinomialSampler(
+            dists_arr=self.dists_arr.copy(),
+            insert_counts=self.insert_counts,
+            sample_size=self.sample_size,
+            n_simulations=10,
+            sample_all=False,
+            size=5,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        result_dists, result_std = sampler.sample()
+        self.verify_common_assertions(result_dists, result_std)
+    
+    def test_with_size_1_sample_all(self):
+        """Test with size=1 and sample_all=True."""
+        sampler = MultithreadedMultinomialSampler(
+            dists_arr=self.dists_arr.copy(),
+            insert_counts=self.insert_counts,
+            sample_size=self.sample_size,
+            n_simulations=10,
+            sample_all=True,
+            size=1,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        result_dists, result_std = sampler.sample()
+        self.verify_common_assertions(result_dists, result_std, sample_all=True)
+    
+    def test_with_size_5_sample_all(self):
+        """Test with size=5 and sample_all=True."""
+        sampler = MultithreadedMultinomialSampler(
+            dists_arr=self.dists_arr.copy(),
+            insert_counts=self.insert_counts,
+            sample_size=self.sample_size,
+            n_simulations=10,
+            sample_all=True,
+            size=5,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        result_dists, result_std = sampler.sample()
+        self.verify_common_assertions(result_dists, result_std, sample_all=True)
+    
+    def test_convergence_with_high_simulations(self):
+        """Test convergence to the original probabilities with high number of simulations."""
+        # Create a small, known distribution 
+        prob_dist = np.array([0.2, 0.3, 0.1, 0.15, 0.25])  # probabilities sum to 1
+        
+        # Create a single distribution with counts reflecting these probabilities
+        counts = 1000
+        test_dist = np.round(prob_dist * counts).astype(int)
+        test_dists_arr = test_dist.reshape(1, -1)
+        test_insert_counts = np.array([counts])
+        
+        # Run with high number of simulations
+        sampler = MultithreadedMultinomialSampler(
+            dists_arr=test_dists_arr.copy(),
+            insert_counts=test_insert_counts,
+            sample_size=10,
+            n_simulations=1000,  # For convergence
+            sample_all=True,
+            size=1,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        
+        # Get samples
+        result_dists, result_std = sampler.sample()
+        
+        # The result_dists should have shape (1, 5)
+        assert result_dists.shape == (1, 5)
+        assert result_std.shape == (1, 5)
+        
+        # Calculate the MC probs
+        result_props = result_dists[0] / np.sum(result_dists[0])
+        
+        # Check that the result approx. the intial distribution
+        for i in range(len(prob_dist)):
+            assert abs(result_props[i] - prob_dist[i]) < 0.05
+        
+        # Verify the standard deviation approx. sqrt(n*p*(1-p))
+        expected_std_dev = np.sqrt(100 * prob_dist * (1 - prob_dist))
+        
+        # Check that std devs are close to expected values
+        for i in range(len(prob_dist)):
+            assert abs(result_std[0][i] - expected_std_dev[i]) < expected_std_dev[i] * 0.25
