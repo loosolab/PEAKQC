@@ -592,7 +592,7 @@ class Test_MultithreadedMultinomialSampler:
             dists_arr=test_dists_arr.copy(),
             insert_counts=test_insert_counts,
             sample_size=10,
-            n_simulations=1000, # For convergence
+            n_simulations=1000,
             sample_all=True,
             size=1,
             seed=42,
