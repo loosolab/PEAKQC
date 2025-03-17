@@ -493,7 +493,7 @@ class Test_MultithreadedMultinomialSampler:
         # Test container has only one thread
         self.n_threads = 1
 
-    def test_shape_mask(self, result_dists, result_std):
+    def _assert(self, result_dists, result_std):
         """Verify common assertions for all test cases."""
         # Check shapes
         assert result_dists.shape == self.reference_dists.shape
@@ -523,7 +523,7 @@ class Test_MultithreadedMultinomialSampler:
             n_threads=self.n_threads
         )
         result_dists, result_std = sampler.sample()
-        self.test_shape_mask(result_dists, result_std)
+        self._assert(result_dists, result_std)
 
     def test_with_size_5(self):
         """Test with size=5 and sample_all=False."""
@@ -538,4 +538,4 @@ class Test_MultithreadedMultinomialSampler:
             n_threads=self.n_threads
         )
         result_dists, result_std = sampler.sample()
-        self.test_shape_mask(result_dists, result_std)
+        self._assert(result_dists, result_std)
