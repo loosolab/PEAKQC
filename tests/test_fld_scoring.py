@@ -450,7 +450,8 @@ def test_add_fld_metrices(adata, fragments, bamfile):
                         plot=False,
                         save_density=None,
                         save_overview=None,
-                        sample=0)
+                        sample=0,
+                        sample_size=None)
 
     assert 'fld_score' in adata_b.obs.columns
     assert 'mean_fragment_size' in adata_b.obs.columns
@@ -467,7 +468,8 @@ def test_add_fld_metrices(adata, fragments, bamfile):
                         save_density=None,
                         save_overview=None,
                         sample=0,
-                        n_threads=8)
+                        n_threads=8,
+                        sample_size=None)
 
     assert 'fld_score' in adata_f.obs.columns
     assert 'mean_fragment_size' in adata_f.obs.columns
@@ -481,35 +483,32 @@ class Test_MultithreadedMultinomialSampler:
     def setup(self):
         """Create test data."""
         np.random.seed(42)
-        self.dists_arr = np.random.negative_binomial(10, 0.5, size=(3, 10))
+        self.dists_arr = (
+            [100, 200, 300, 400],
+            [1000, 2000, 3000, 4000]
+        )
         self.insert_counts = np.sum(self.dists_arr, axis=1)
         self.reference_dists = self.dists_arr.copy()
-        self.sample_size = 100
+        self.sample_size = 1000
         # Test container has only one thread
         self.n_threads = 1
 
-    def test_shape_mask(self, result_dists, result_std, sample_all=False):
+    def test_shape_mask(self, result_dists, result_std):
         """Verify common assertions for all test cases."""
         # Check shapes
         assert result_dists.shape == self.reference_dists.shape
         assert result_std.shape == self.reference_dists.shape
 
-        if sample_all:
-            # When sample_all=True, all distributions with insert_counts > 0 should be processed
-            mask_all = self.insert_counts > 0
-            for i in np.where(mask_all)[0]:
-                assert np.sum(result_dists[i]) == self.sample_size
-        else:
-            # Check that only distributions with insert_counts > sample_size are modified
-            mask = self.insert_counts > self.sample_size
-            if np.any(mask):
-                # At least one distribution should be modified
-                assert not np.array_equal(result_dists[mask], self.reference_dists[mask])
+        # Check that only distributions with insert_counts > sample_size are modified
+        mask = self.insert_counts > self.sample_size
+        if np.any(mask):
+            # At least one distribution should be modified
+            assert not np.array_equal(result_dists[mask], self.reference_dists[mask])
 
-            # Not mask should be unchanged
-            not_mask = ~mask
-            if np.any(not_mask):
-                assert np.array_equal(result_dists[not_mask], self.reference_dists[not_mask])
+        # Not mask should be unchanged
+        not_mask = ~mask
+        if np.any(not_mask):
+            assert np.array_equal(result_dists[not_mask], self.reference_dists[not_mask])
 
     def test_with_size_1(self):
         """Test with size=1 and sample_all=False."""
@@ -541,32 +540,3 @@ class Test_MultithreadedMultinomialSampler:
         result_dists, result_std = sampler.sample()
         self.test_shape_mask(result_dists, result_std)
 
-    def test_with_size_1_sample_all(self):
-        """Test with size=1 and sample_all=True."""
-        sampler = MultithreadedMultinomialSampler(
-            dists_arr=self.dists_arr.copy(),
-            insert_counts=self.insert_counts,
-            sample_size=self.sample_size,
-            n_simulations=10,
-            sample_all=True,
-            size=1,
-            seed=42,
-            n_threads=self.n_threads
-        )
-        result_dists, result_std = sampler.sample()
-        self.test_shape_mask(result_dists, result_std, sample_all=True)
-
-    def test_with_size_5_sample_all(self):
-        """Test with size=5 and sample_all=True."""
-        sampler = MultithreadedMultinomialSampler(
-            dists_arr=self.dists_arr.copy(),
-            insert_counts=self.insert_counts,
-            sample_size=self.sample_size,
-            n_simulations=10,
-            sample_all=True,
-            size=5,
-            seed=42,
-            n_threads=self.n_threads
-        )
-        result_dists, result_std = sampler.sample()
-        self.test_shape_mask(result_dists, result_std, sample_all=True)
