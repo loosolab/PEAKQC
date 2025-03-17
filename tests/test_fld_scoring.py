@@ -498,12 +498,7 @@ class Test_MultithreadedMultinomialSampler:
             # When sample_all=True, all distributions with insert_counts > 0 should be processed
             mask_all = self.insert_counts > 0
             for i in np.where(mask_all)[0]:
-                if self.insert_counts[i] > self.sample_size:
-                    # Should be downsampled to sample_size
-                    assert abs(np.sum(result_dists[i]) - self.sample_size) < 10
-                else:
-                    # Should keep original count
-                    assert abs(np.sum(result_dists[i]) - self.insert_counts[i]) < 10
+                assert np.sum(result_dists[i]) == self.sample_size
         else:
             # Check that only distributions with insert_counts > sample_size are modified
             mask = self.insert_counts > self.sample_size

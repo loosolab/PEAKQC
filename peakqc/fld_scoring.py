@@ -1021,16 +1021,15 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 class MultithreadedMultinomialSampler:
     """Multithreaded multinomial sampler."""
 
-    def __init__(
-                self,
-                dists_arr: npt.ArrayLike,
-                insert_counts: Union[npt.ArrayLike, pd.Series],
-                sample_size: int = 10000,
-                n_simulations: int = 100,
-                size: int = 1,
-                seed: int = 42,
-                n_threads: Optional[int] = None,
-                sample_all: bool = False):
+    def __init__(self,
+                 dists_arr: npt.ArrayLike,
+                 insert_counts: Union[npt.ArrayLike, pd.Series],
+                 sample_size: int = 10000,
+                 n_simulations: int = 100,
+                 size: int = 1,
+                 seed: int = 42,
+                 n_threads: Optional[int] = None,
+                 sample_all: bool = False):
         """
         Initialize the multithreaded multinomial sampler.
 
