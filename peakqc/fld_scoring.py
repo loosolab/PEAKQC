@@ -1090,7 +1090,7 @@ class MultithreadedMultinomialSampler:
         if sample_all:
             # If sample_all is True, sample everything
             self.subsample_mask = insert_counts > 0
-        else: 
+        else:
             if sample_size is None:
                 # If true and not sample_all = True
                 # Will return in sampler due to all False
@@ -1141,7 +1141,7 @@ class MultithreadedMultinomialSampler:
             for rng in _random_generators:
                 sample = rng.multinomial(_sample_size, pvals, self.size)
 
-                # Iter over 
+                # Iter over
                 for smpl in sample:
                     N += 1
                     delta = smpl - M1s
@@ -1161,29 +1161,13 @@ class MultithreadedMultinomialSampler:
             # Store results
             results[idx] = (M1s, std_devs)
 
-            self.pbar.update(1)         
+            self.pbar.update(1)
 
         return results
 
     @beartype
     def sample(self) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
-        """
-        Perform multithreaded multinomial sampling.
-
-        Parameters
-        ----------
-        sample_all : Optional[bool], optional
-            If provided, temporarily overrides the instance's sample_all setting for this call.
-            If True, samples all distributions. If False, only samples distributions where
-            insert_count > sample_size. If None (default), uses the instance's sample_all setting.
-
-        Returns
-        -------
-        Tuple[npt.ArrayLike, npt.ArrayLike]
-            A tuple containing:
-            - The sampled distributions array
-            - The standard deviation array
-        """
+        """Perform multithreaded multinomial sampling."""
 
         # Early return if no subsampling needed
         if not np.any(self.subsample_mask):
@@ -1194,14 +1178,14 @@ class MultithreadedMultinomialSampler:
         indices = np.where(self.subsample_mask)[0]
 
         # Process distributions in batches
-        batch_size = max(1, len(indices) // self.n_threads) # self.n_thread is fastes
-        batches = [indices[i:i+batch_size] for i in range(0, len(indices), batch_size)]
+        batch_size = max(1, len(indices) // self.n_threads)
+        batches = [indices[i:i + batch_size] for i in range(0, len(indices), batch_size)]
         self.num_batches = len(batches)
 
         # Set up progress bar
         self.pbar = tqdm(
             total=len(indices),
-            desc=f"Processing Samples"
+            desc="Processing Samples"
         )
 
         futures = [self.executor.submit(self.process_batch, batch) for batch in batches]

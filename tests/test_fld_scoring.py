@@ -479,13 +479,14 @@ class Test_MultithreadedMultinomialSampler:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        """Setup test data before each test."""
+        """Create test data."""
         np.random.seed(42)
         self.dists_arr = np.random.negative_binomial(10, 0.5, size=(3, 10))
         self.insert_counts = np.sum(self.dists_arr, axis=1)
         self.reference_dists = self.dists_arr.copy()
         self.sample_size = 100
-        self.n_threads = 1  # Test container has only one thread
+        # Test container has only one thread
+        self.n_threads = 1
 
     def test_shape_mask(self, result_dists, result_std, sample_all=False):
         """Verify common assertions for all test cases."""
@@ -543,7 +544,7 @@ class Test_MultithreadedMultinomialSampler:
             n_threads=self.n_threads
         )
         result_dists, result_std = sampler.sample()
-        self.verify_common_assertions(result_dists, result_std)
+        self.test_shape_mask(result_dists, result_std)
 
     def test_with_size_1_sample_all(self):
         """Test with size=1 and sample_all=True."""
@@ -558,7 +559,7 @@ class Test_MultithreadedMultinomialSampler:
             n_threads=self.n_threads
         )
         result_dists, result_std = sampler.sample()
-        self.verify_common_assertions(result_dists, result_std, sample_all=True)
+        self.test_shape_mask(result_dists, result_std, sample_all=True)
 
     def test_with_size_5_sample_all(self):
         """Test with size=5 and sample_all=True."""
@@ -573,11 +574,11 @@ class Test_MultithreadedMultinomialSampler:
             n_threads=self.n_threads
         )
         result_dists, result_std = sampler.sample()
-        self.verify_common_assertions(result_dists, result_std, sample_all=True)
+        self.test_shape_mask(result_dists, result_std, sample_all=True)
 
     def test_convergence_with_high_simulations(self):
         """Test convergence to the original probabilities with high number of simulations."""
-        # Create a small, known distribution 
+        # Create a small, known distribution
         prob_dist = np.array([0.2, 0.3, 0.1, 0.15, 0.25])  # probabilities sum to 1
 
         # Create a single distribution with counts reflecting these probabilities
@@ -591,7 +592,7 @@ class Test_MultithreadedMultinomialSampler:
             dists_arr=test_dists_arr.copy(),
             insert_counts=test_insert_counts,
             sample_size=10,
-            n_simulations=1000,  # For convergence
+            n_simulations=1000, # For convergence
             sample_all=True,
             size=1,
             seed=42,
