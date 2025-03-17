@@ -1229,6 +1229,7 @@ def add_fld_metrics(adata: sc.AnnData,
                     save_overview: Optional[str] = None,
                     sample: int = 0,
                     n_threads: int = 8,
+                    colormap_density: str = 'jet',
                     sample_size: Optional[int] = 10000,
                     mc_seed: int = 42,
                     mc_samples: int = 1000,
@@ -1273,6 +1274,8 @@ def add_fld_metrics(adata: sc.AnnData,
         Index of the sample to plot.
     n_threads : int, default 12
         Number of threads.
+    colormap_density : str, default 'jet'
+        Colormap for the density plot.
     sample_size : Optional[int], default=100,000
         Number of fragments to subsample for multinomial sampling. If None, all fragments are used.
     mc_seed : int, default=42
@@ -1347,7 +1350,7 @@ def add_fld_metrics(adata: sc.AnnData,
     # plot the densityplot of the fragment length distribution
     if plot:
         print("plotting density...")
-        density_plot(dists_arr_subsampled, max_abundance=600, save=save_density)
+        density_plot(dists_arr_subsampled, max_abundance=600, save=save_density, colormap=colormap_density)
 
     # calculate scores using the convolution method
     print("calculating scores using the custom continues wavelet transformation...")
