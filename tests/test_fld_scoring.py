@@ -483,10 +483,10 @@ class Test_MultithreadedMultinomialSampler:
     def setup(self):
         """Create test data."""
         np.random.seed(42)
-        self.dists_arr = (
+        self.dists_arr = np.array([
             [100, 200, 300, 400],
             [1000, 2000, 3000, 4000]
-        )
+        ])
         self.insert_counts = np.sum(self.dists_arr, axis=1)
         self.reference_dists = self.dists_arr.copy()
         self.sample_size = 1000
@@ -539,4 +539,3 @@ class Test_MultithreadedMultinomialSampler:
         )
         result_dists, result_std = sampler.sample()
         self.test_shape_mask(result_dists, result_std)
-
