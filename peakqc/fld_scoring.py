@@ -1030,11 +1030,11 @@ class MultithreadedMultinomialSampler:
                 size: int = 1,
                 seed: int = 42,
                 n_threads: Optional[int] = None,
-                sample_all: bool = False
-                ):
-        """Initialize the multithreaded multinomial sampler.
+                sample_all: bool = False):
+        """
+        Initialize the multithreaded multinomial sampler.
 
-                Parameters
+        Parameters
         ----------
         dists_arr : npt.ArrayLike
             A 2D array where each row represents the count distribution of fragment lengths.
