@@ -529,7 +529,7 @@ class Test_MultithreadedMultinomialSampler:
             n_threads=self.n_threads
         )
         result_dists, result_std = sampler.sample()
-        self.verify_common_assertions(result_dists, result_std)
+        self.test_shape_mask(result_dists, result_std)
 
     def test_with_size_5(self):
         """Test with size=5 and sample_all=False."""
