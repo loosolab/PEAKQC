@@ -476,7 +476,7 @@ def test_add_fld_metrices(adata, fragments, bamfile):
 
 class Test_MultithreadedMultinomialSampler:
     """Test class for MultithreadedMultinomialSampler."""
-    
+
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup test data before each test."""
@@ -486,13 +486,13 @@ class Test_MultithreadedMultinomialSampler:
         self.reference_dists = self.dists_arr.copy()
         self.sample_size = 100
         self.n_threads = 1  # Test container has only one thread
-        
+
     def test_shape_mask(self, result_dists, result_std, sample_all=False):
         """Verify common assertions for all test cases."""
         # Check shapes
         assert result_dists.shape == self.reference_dists.shape
         assert result_std.shape == self.reference_dists.shape
-        
+
         if sample_all:
             # When sample_all=True, all distributions with insert_counts > 0 should be processed
             mask_all = self.insert_counts > 0
@@ -509,12 +509,12 @@ class Test_MultithreadedMultinomialSampler:
             if np.any(mask):
                 # At least one distribution should be modified
                 assert not np.array_equal(result_dists[mask], self.reference_dists[mask])
-            
+
             # Not mask should be unchanged
             not_mask = ~mask
             if np.any(not_mask):
                 assert np.array_equal(result_dists[not_mask], self.reference_dists[not_mask])
-    
+
     def test_with_size_1(self):
         """Test with size=1 and sample_all=False."""
         sampler = MultithreadedMultinomialSampler(
@@ -529,7 +529,7 @@ class Test_MultithreadedMultinomialSampler:
         )
         result_dists, result_std = sampler.sample()
         self.verify_common_assertions(result_dists, result_std)
-    
+
     def test_with_size_5(self):
         """Test with size=5 and sample_all=False."""
         sampler = MultithreadedMultinomialSampler(
@@ -544,7 +544,7 @@ class Test_MultithreadedMultinomialSampler:
         )
         result_dists, result_std = sampler.sample()
         self.verify_common_assertions(result_dists, result_std)
-    
+
     def test_with_size_1_sample_all(self):
         """Test with size=1 and sample_all=True."""
         sampler = MultithreadedMultinomialSampler(
@@ -559,7 +559,7 @@ class Test_MultithreadedMultinomialSampler:
         )
         result_dists, result_std = sampler.sample()
         self.verify_common_assertions(result_dists, result_std, sample_all=True)
-    
+
     def test_with_size_5_sample_all(self):
         """Test with size=5 and sample_all=True."""
         sampler = MultithreadedMultinomialSampler(
@@ -574,18 +574,18 @@ class Test_MultithreadedMultinomialSampler:
         )
         result_dists, result_std = sampler.sample()
         self.verify_common_assertions(result_dists, result_std, sample_all=True)
-    
+
     def test_convergence_with_high_simulations(self):
         """Test convergence to the original probabilities with high number of simulations."""
         # Create a small, known distribution 
         prob_dist = np.array([0.2, 0.3, 0.1, 0.15, 0.25])  # probabilities sum to 1
-        
+
         # Create a single distribution with counts reflecting these probabilities
         counts = 1000
         test_dist = np.round(prob_dist * counts).astype(int)
         test_dists_arr = test_dist.reshape(1, -1)
         test_insert_counts = np.array([counts])
-        
+
         # Run with high number of simulations
         sampler = MultithreadedMultinomialSampler(
             dists_arr=test_dists_arr.copy(),
@@ -597,24 +597,24 @@ class Test_MultithreadedMultinomialSampler:
             seed=42,
             n_threads=self.n_threads
         )
-        
+
         # Get samples
         result_dists, result_std = sampler.sample()
-        
+
         # The result_dists should have shape (1, 5)
         assert result_dists.shape == (1, 5)
         assert result_std.shape == (1, 5)
-        
+
         # Calculate the MC probs
         result_props = result_dists[0] / np.sum(result_dists[0])
-        
+
         # Check that the result approx. the intial distribution
         for i in range(len(prob_dist)):
             assert abs(result_props[i] - prob_dist[i]) < 0.05
-        
+
         # Verify the standard deviation approx. sqrt(n*p*(1-p))
         expected_std_dev = np.sqrt(100 * prob_dist * (1 - prob_dist))
-        
+
         # Check that std devs are close to expected values
         for i in range(len(prob_dist)):
             assert abs(result_std[0][i] - expected_std_dev[i]) < expected_std_dev[i] * 0.25
