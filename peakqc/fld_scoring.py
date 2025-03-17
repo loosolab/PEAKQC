@@ -1019,6 +1019,7 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 # https://numpy.org/doc/2.2/reference/random/multithreading.html
 @beartype
 class MultithreadedMultinomialSampler:
+    """Multithreaded multinomial sampler""" 
     def __init__(
         self,
         dists_arr: npt.ArrayLike,
