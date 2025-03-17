@@ -1019,18 +1019,19 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 # https://numpy.org/doc/2.2/reference/random/multithreading.html
 @beartype
 class MultithreadedMultinomialSampler:
-    """Multithreaded multinomial sampler""" 
+    """Multithreaded multinomial sampler."""
+
     def __init__(
-        self,
-        dists_arr: npt.ArrayLike,
-        insert_counts: Union[npt.ArrayLike, pd.Series],
-        sample_size: int = 10000,
-        n_simulations: int = 100,
-        size: int = 1,
-        seed: int = 42,
-        n_threads: Optional[int] = None,
-        sample_all: bool = False
-    ):
+                self,
+                dists_arr: npt.ArrayLike,
+                insert_counts: Union[npt.ArrayLike, pd.Series],
+                sample_size: int = 10000,
+                n_simulations: int = 100,
+                size: int = 1,
+                seed: int = 42,
+                n_threads: Optional[int] = None,
+                sample_all: bool = False
+                ):
         """Initialize the multithreaded multinomial sampler.
 
                 Parameters
@@ -1109,6 +1110,7 @@ class MultithreadedMultinomialSampler:
     @beartype
     def process_batch(self, batch_indices: npt.ArrayLike) -> Dict[np.int64, Tuple[npt.ArrayLike, npt.ArrayLike]]:
         """Process a batch of distribution indices."""
+
         results = {}
 
         for idx in batch_indices:
