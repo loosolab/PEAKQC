@@ -2,16 +2,20 @@
 # Author: Jan Detleffsen (jan.detleffsen@mpi-bn.mpg.de)
 
 import numpy as np
+from numpy.random import default_rng
 import pandas as pd
 import scanpy as sc
 import matplotlib.pyplot as plt
 import matplotlib
+
 from tqdm import tqdm
 import multiprocessing as mp
+import concurrent.futures
+
 from scipy.signal import find_peaks
 from scipy.signal import fftconvolve
 
-from beartype.typing import Optional, Literal, SupportsFloat, Tuple
+from beartype.typing import Optional, Literal, SupportsFloat, Tuple, Union, Dict
 from beartype import beartype
 import numpy.typing as npt
 
@@ -1012,6 +1016,201 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
     return axes
 
 
+# https://numpy.org/doc/2.2/reference/random/multithreading.html
+@beartype
+class MultithreadedMultinomialSampler:
+    """Multithreaded multinomial sampler."""
+
+    def __init__(self,
+                 dists_arr: npt.ArrayLike,
+                 insert_counts: Union[npt.ArrayLike, pd.Series],
+                 sample_size: int = 10000,
+                 n_simulations: int = 100,
+                 size: int = 1,
+                 seed: int = 42,
+                 n_threads: Optional[int] = None,
+                 sample_all: bool = False):
+        """
+        Initialize the multithreaded multinomial sampler.
+
+        Parameters
+        ----------
+        dists_arr : npt.ArrayLike
+            A 2D array where each row represents the count distribution of fragment lengths.
+        insert_counts : Union[npt.ArrayLike, pd.Series]
+            A 1D array indicating the number of elements per distribution.
+        sample_size : int, optional
+            The number of samples to draw per multinomial sampling, by default 10000.
+        n_simulations : int, optional
+            The number of independent simulations to run, by default 100
+        size : int, optional
+            Number of multinomial experiments to perform. Default is 1.
+        seed : int, optional
+            Random seed for reproducibility, by default 42
+        n_threads : Optional[int], optional
+            The number of parallel threads to use. If None, will determine automatically.
+        sample_all : bool, optional
+            If True, sample all distributions either based on insert_counts or sample_size, by default False.
+            If False, sample where insert_counts > sample_size.
+        """
+        # Determine thread count if not specified
+        if n_threads is None:
+            cpu_count = mp.cpu_count()
+            if cpu_count >= 4:
+                n_threads = 4
+            elif cpu_count >= 2:
+                print("Less than the optimal four threads available. Falling back to: 2 threads.")
+                n_threads = 2
+            else:
+                n_threads = 1
+                print("Only one thread available. MC downsampling will take some time.")
+
+        self.n_threads = n_threads
+
+        # Convert to numpy array if pandas Series
+        if isinstance(insert_counts, pd.Series):
+            insert_counts = insert_counts.values
+
+        self.dists_arr = dists_arr
+        self.insert_counts = insert_counts
+        self.sample_size = sample_size
+        self.n_simulations = n_simulations
+        self.size = size
+        self.seed = seed
+
+        # Create seeds sequence
+        # https://numpy.org/doc/2.2/reference/random/parallel.html#seedsequence-spawn
+        seed_seq = np.random.SeedSequence(self.seed)
+        # Spawn child seeds for the random generators
+        self.child_seeds = seed_seq.spawn(n_simulations)
+
+        # Sample all flag
+        self.sample_all = sample_all
+
+        # Create mask for samples needing subsampling
+        if sample_all:
+            # If sample_all is True, sample everything
+            self.subsample_mask = insert_counts > 0
+        else:
+            if sample_size is None:
+                # If true and not sample_all = True
+                # Will return in sampler due to all False
+                self.subsample_mask = np.zeros_like(insert_counts, dtype=bool)
+            else:
+                # Otherwise, sample where insert_counts > sample_size
+                self.subsample_mask = insert_counts > sample_size
+
+        # Initialize executor
+        self.executor = concurrent.futures.ThreadPoolExecutor(n_threads)
+
+        # Std collector
+        self.std_dev = np.zeros_like(self.dists_arr, dtype=np.float64)
+
+    @beartype
+    def process_batch(self, batch_indices: npt.ArrayLike) -> Dict[np.int64, Tuple[npt.ArrayLike, npt.ArrayLike]]:
+        """Process a batch of distribution indices."""
+
+        results = {}
+
+        for idx in batch_indices:
+            dist = self.dists_arr[idx]
+            total = dist.sum()
+            if total <= 0:
+                self.pbar.update(1)
+                continue
+
+            pvals = dist / total
+
+            # Using Welford's online update for M1 (mean) and M2 (variance)
+            # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+            num_bp = len(dist)
+
+            M1s = np.zeros(num_bp, dtype=np.float64)
+            M2s = np.zeros(num_bp, dtype=np.float64)
+            N = 0
+
+            # Create random generators for each simulation
+            _random_generators = [default_rng(s) for s in self.child_seeds]
+
+            # If sample_size is None use insert_size as sample size
+            if self.sample_size is None:
+                _sample_size = self.insert_counts[idx]
+            else:
+                # If sample size provided, use sample size
+                _sample_size = self.sample_size
+
+            # Iter over n = n_simulations random generator with n different seeds
+            for rng in _random_generators:
+                sample = rng.multinomial(_sample_size, pvals, self.size)
+
+                # Iter over
+                for smpl in sample:
+                    N += 1
+                    delta = smpl - M1s
+                    M1s += delta / N
+                    delta2 = smpl - M1s
+                    M2s += delta * delta2
+
+            M1s = np.round(M1s).astype(np.int64)
+
+            if N > 1:
+                M2s = M2s / (N - 1)
+                std_devs = np.sqrt(M2s)
+            else:
+                # No variance, thus
+                std_devs = np.zeros_like(M1s)
+
+            # Store results
+            results[idx] = (M1s, std_devs)
+
+            self.pbar.update(1)
+
+        return results
+
+    @beartype
+    def sample(self) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
+        """Perform multithreaded multinomial sampling."""
+
+        # Early return if no subsampling needed
+        if not np.any(self.subsample_mask):
+            # Return zeros for std_dev since no sampling was done
+            return self.dists_arr, self.std_dev
+
+        # Get indices that need processing
+        indices = np.where(self.subsample_mask)[0]
+
+        # Process distributions in batches
+        batch_size = max(1, len(indices) // self.n_threads)
+        batches = [indices[i:i + batch_size] for i in range(0, len(indices), batch_size)]
+        self.num_batches = len(batches)
+
+        # Set up progress bar
+        self.pbar = tqdm(
+            total=len(indices),
+            desc="Processing Samples"
+        )
+
+        futures = [self.executor.submit(self.process_batch, batch) for batch in batches]
+
+        for future in concurrent.futures.as_completed(futures):
+            # Collect results
+            batch_results = future.result()
+
+            # Fill dists_arr and std_dev array with samples mean and std
+            for idx, (result, std) in batch_results.items():
+                self.dists_arr[idx] = result
+                self.std_dev[idx] = std
+
+        self.pbar.close()
+
+        return self.dists_arr, self.std_dev
+
+    def __del__(self):
+        """Clean up resources."""
+        if hasattr(self, 'executor'):
+            self.executor.shutdown(wait=False)
+
+
 # ///////////////////////////////////////// final wrapper \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 @beartype
@@ -1031,6 +1230,9 @@ def add_fld_metrics(adata: sc.AnnData,
                     sample: int = 0,
                     n_threads: int = 8,
                     colormap_density: str = 'jet',
+                    sample_size: Optional[int] = 10000,
+                    mc_seed: int = 42,
+                    mc_samples: int = 1000,
                     return_distributions: bool = False) -> Optional[Tuple[pd.DataFrame, npt.ArrayLike]]:
     """
     Add insert size metrics to an AnnData object.
@@ -1074,6 +1276,12 @@ def add_fld_metrics(adata: sc.AnnData,
         Number of threads.
     colormap_density : str, default 'jet'
         Colormap for the density plot.
+    sample_size : Optional[int], default=100,000
+        Number of fragments to subsample for multinomial sampling. If None, all fragments are used.
+    mc_seed : int, default=42
+        Random seed for Monte Carlo sampling to ensure reproducibility.
+    mc_samples : int, default=100
+        Number of Monte Carlo simulations for subsampling.
     return_distributions : bool, default False
         If true, the fragment length distributions are returned.
 
@@ -1125,14 +1333,28 @@ def add_fld_metrics(adata: sc.AnnData,
     # convert the count_table to an array with the dtype int64
     dists_arr = np.array(count_table['dist'].tolist(), dtype=np.int64)
 
+    # Monte Carlo Multinomial Sampling (Optional)
+    if sample_size is not None:
+        sampler = MultithreadedMultinomialSampler(
+            dists_arr,
+            insert_counts,
+            sample_size=sample_size,
+            n_simulations=mc_samples,
+            seed=mc_seed,
+            n_threads=n_threads
+        )
+        dists_arr_subsampled, _ = sampler.sample()
+    else:
+        dists_arr_subsampled = dists_arr
+
     # plot the densityplot of the fragment length distribution
     if plot:
         print("plotting density...")
-        density_plot(dists_arr, max_abundance=600, save=save_density, colormap=colormap_density)
+        density_plot(dists_arr_subsampled, max_abundance=600, save=save_density, colormap=colormap_density)
 
     # calculate scores using the convolution method
     print("calculating scores using the custom continues wavelet transformation...")
-    conv_scores = score_by_conv(data=dists_arr,
+    conv_scores = score_by_conv(data=dists_arr_subsampled,
                                 wavelength=wavelength,
                                 sigma=sigma,
                                 plot_wavl=plot,
@@ -1171,56 +1393,4 @@ def add_fld_metrics(adata: sc.AnnData,
     # return distributions if specified
     if return_distributions:
         inserts_df
-        return inserts_df, dists_arr
-
-
-if __name__ == '__main__':
-
-    import sctoolbox.utils as utils
-
-    h5ad_file = '/mnt/workspace2/jdetlef/experimental/peakqc_debug/data/anndata/heart_left_ventricle_IOBHO.h5ad'
-    fragment_file = '/mnt/workspace2/jdetlef/experimental/peakqc_debug/data/fragments/fragments_heart_left_ventricle_IOBHO.bed'
-
-    adata = sc.read_h5ad(h5ad_file)
-
-    # 2. ATAC specific anndata properties
-    # The following settings are used to format the index and coordinate columns
-
-    # Column name(s) of adata.var containing peak location data.
-    # Either a single column (str) or a list of three columns (['chr', 'start', 'end']).
-    coordinate_cols = ['peak_chr', 'peak_start', 'peak_end']
-
-    # when formatting the index, should the prefix be removed
-    remove_var_index_prefix = True
-
-    # provide a name to save the original index, if None it will be overwritten
-    keep_original_index = None
-
-    # regex to format the index
-    coordinate_regex = r"chr[0-9XYM]+[\_\:\-]+[0-9]+[\_\:\-]+[0-9]+"
-
-    adata = utils.assemblers.prepare_atac_anndata(adata,
-                                                  coordinate_cols=coordinate_cols,
-                                                  h5ad_path=h5ad_file,
-                                                  remove_var_index_prefix=remove_var_index_prefix,
-                                                  keep_original_index=keep_original_index,
-                                                  coordinate_regex=coordinate_regex)
-
-    barcode_tag = 'CB'
-
-    add_fld_metrics(adata=adata,
-                    fragments=fragment_file,
-                    barcode_col=None,
-                    barcode_tag=barcode_tag,
-                    chunk_size_bam=1000000,
-                    regions=None,
-                    peaks_thr=10,
-                    wavelength=150,
-                    sigma=0.4,
-                    plot=True,
-                    save_density=None,
-                    save_overview=None,
-                    n_threads=1,
-                    sample=0)
-
-    print(adata.obs.columns)
+        return inserts_df, dists_arr_subsampled
