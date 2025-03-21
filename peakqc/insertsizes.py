@@ -3,10 +3,10 @@
 
 import pandas as pd
 import numpy as np
-import gzip
 import datetime
 from multiprocessing import Manager, Lock, Pool
 from tqdm import tqdm
+
 import peakqc.general as utils
 import os
 import re
@@ -93,11 +93,23 @@ def _custom_callback(error: Exception) -> None:
     print(error, flush=True)
 
 
+GLOBAL_SHARD_LOCKS = None
+
+def init_worker(shard_locks):
+    """
+    Initializer for worker processes to set global locks.
+    """
+    global GLOBAL_SHARD_LOCKS
+    GLOBAL_SHARD_LOCKS = shard_locks
+
+
 @beartype
 def insertsize_from_fragments(fragments: str,
                               barcodes: Optional[list[str]] = None,
                               chunk_size: int = 5000000,
-                              n_threads: int = 8) -> pd.DataFrame:
+                              n_threads: int = 8,
+                              n_shards: int = 4,
+                              verbose: bool =True) -> pd.DataFrame:
     """
     Count the insertsizes of fragments in a fragments file to obtain the insertsize size distribution, beside basic statistics (mean and total count) per barcode.
 
@@ -118,11 +130,6 @@ def insertsize_from_fragments(fragments: str,
         Dataframe containing the mean insertsizes and total counts per barcode.
     """
     print('Count insertsizes from fragments...')
-    # Open fragments file
-    if utils._is_gz_file(fragments):
-        f = gzip.open(fragments, "rt")
-    else:
-        f = open(fragments, "r")
 
     # Prepare function for checking against barcodes list
     if barcodes is not None:
@@ -143,41 +150,66 @@ def insertsize_from_fragments(fragments: str,
     start_time = datetime.datetime.now()
 
     # Initialize multiprocessing
-    m = Manager()  # initialize manager
-    lock = Lock()  # initialize lock
-    managed_dict = m.dict()  # initialize managed dict
-    managed_dict['output'] = {}
-    # initialize pool
-    pool = Pool(processes=n_threads,
-                initializer=init_pool_processes,
-                initargs=(lock,),
-                maxtasksperchild=48)
-    jobs = []
-    print('Starting counting fragments...')
-    # split fragments into chunks
-    for chunk in tqdm(iterator, desc="Processing Chunks"):
-        # apply async job wit callback function
-        job = pool.apply_async(_count_fragments_worker,
-                               args=(chunk, barcodes, check_in, managed_dict),
-                               error_callback=_custom_callback)
-        jobs.append(job)
+    # Initialize Manager and sharded dictionaries
+    m = Manager()
+    managed_dicts = [m.dict() for _ in range(n_shards)]
+    # Initialize each managed dictionary as empty
+    for i in range(n_shards):
+        managed_dicts[i].update({})
+    # Create one lock per shard
+    shard_locks = [Lock() for _ in range(n_shards)]
 
-    # close pool
+    pool = Pool(processes=n_threads, initializer=init_worker, initargs=(shard_locks,))
+    tasks = []
+    max_active_tasks = n_shards + 1  # Limit active tasks to this number
+    shard_counter = 0
+    # Distribute chunks to workers, assigning shard index in round-robin fashion
+    for i, chunk in enumerate(iterator):
+        chunk = clean_chunk(chunk)
+        shard_index = shard_counter % n_shards
+        if verbose:
+            print(f"Processing chunk {i} on shard {shard_index}")
+
+        tasks.append(pool.apply_async(_count_fragments_worker,
+                                      args=(chunk, shard_index, managed_dicts, barcodes, check_in),
+                                      error_callback=_custom_callback))
+        shard_counter += 1
+
+        # Check active tasks in an unordered fashion
+        while len(tasks) >= max_active_tasks:
+            # Poll all tasks to see if any are ready
+            ready_tasks = [t for t in tasks if t.ready()]
+            if ready_tasks:
+                for t in ready_tasks:
+                    t.get()  # Retrieve result and catch exceptions if any
+                    tasks.remove(t)
+            else:
+                # If none are ready, wait briefly on one task (using get with timeout or simply on the first one)
+                tasks[0].get()  # This will wait for the first task to complete
+                tasks.pop(0)
+
+    # Wait for all worker tasks to complete
+    for t in tasks:
+        t.wait()
+
     pool.close()
-    # wait for all jobs to finish
     pool.join()
-    # reset settings
-    count_dict = managed_dict['output']
 
-    # Close file and print elapsed time
+    if verbose:
+        print('Merge results...')
+
+    # Final merge: combine all shard dictionaries into one final result
+    final_dict = {}
+    for d in managed_dicts:
+        final_dict = optimized_update_count_dict(final_dict, dict(d))
+
     end_time = datetime.datetime.now()
-    f.close()
     elapsed = end_time - start_time
-    print("Done reading file - elapsed time: {0}".format(str(elapsed).split(".")[0]))
+    print("Final merging complete. Elapsed time:", str(elapsed).split(".")[0])
 
     # Convert dict to pandas dataframe
     print("Converting counts to dataframe...")
-    table = pd.DataFrame.from_dict(count_dict, orient="index")
+    table = pd.DataFrame.from_dict(final_dict, orient="index")
     # round mean_insertsize to 2 decimals
     table["mean_insertsize"] = table["mean_insertsize"].round(2)
 
@@ -186,10 +218,23 @@ def insertsize_from_fragments(fragments: str,
     return table
 
 
+def clean_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
+    # Attempt to convert the 'start' and 'stop' columns to numeric values
+    chunk[['start', 'stop']] = chunk[['start', 'stop']].apply(pd.to_numeric, errors='coerce')
+    # Drop rows where conversion failed (i.e., header or malformed rows)
+    clean = chunk.dropna(subset=['start', 'stop'])
+    # Convert columns back to int if necessary
+    clean.loc[:, 'start'] = clean['start'].astype(int)
+    clean.loc[:, 'stop'] = clean['stop'].astype(int)
+
+    return clean
+
+
 def _count_fragments_worker(chunk: pd.DataFrame,
+                            shard_index: int,
+                            managed_dicts,
                             barcodes: Optional[list[str]] = None,
-                            check_in: Any = _check_true,
-                            managed_dict: dict = {'output': {}}) -> None:
+                            check_in: Any = _check_true) -> None:
     """
     Worker function to count fragments from a fragments file.
 
@@ -211,7 +256,7 @@ def _count_fragments_worker(chunk: pd.DataFrame,
     """
 
     # Initialize count_dict
-    count_dict = {}
+    local_update = {}
     # Iterate over chunk
     for row in chunk.itertuples():
         start = int(row[2])
@@ -222,13 +267,14 @@ def _count_fragments_worker(chunk: pd.DataFrame,
 
         # Only add fragment if check is true
         if check_in(barcode, barcodes) is True:
-            count_dict = _add_fragment(count_dict, barcode, size, count)  # add fragment to count_dict
+            local_update = _add_fragment(local_update, barcode, size, count)  # add fragment to count_dict
 
     # Update managed_dict
-    lock.acquire()  # acquire lock
-    latest = managed_dict['output']
-    managed_dict['output'] = _update_count_dict(latest, count_dict)  # update managed dict
-    lock.release()  # release lock
+    with GLOBAL_SHARD_LOCKS[shard_index]:
+        current_dict = dict(managed_dicts[shard_index])
+        new_dict = optimized_update_count_dict(current_dict, local_update)
+        managed_dicts[shard_index].clear()
+        managed_dicts[shard_index].update(new_dict)
 
 
 @beartype
@@ -335,6 +381,53 @@ def _update_count_dict(count_dict_1: dict, count_dict_2: dict) -> dict:
         {'mean_insertsize': updated_means, 'insertsize_count': updated_counts, 'dist': combined_dists}).T.to_dict()
 
     return updated_dict
+
+
+def optimized_update_count_dict(dict1: dict, dict2: dict) -> dict:
+    """
+    Merge two dictionaries containing 'mean_insertsize', 'insertsize_count', and 'dist'
+    using NumPy for optimized performance.
+
+    Parameters:
+    ----------
+    dict1 : dict
+        First dictionary with barcode keys.
+    dict2 : dict
+        Second dictionary with barcode keys.
+
+    Returns:
+    -------
+    dict
+        Merged dictionary.
+    """
+    merged_dict = {}
+    # Gather all barcodes from both dictionaries
+    all_barcodes = set(dict1.keys()) | set(dict2.keys())
+    for barcode in all_barcodes:
+        if barcode in dict1 and barcode in dict2:
+            count1 = dict1[barcode]['insertsize_count']
+            count2 = dict2[barcode]['insertsize_count']
+            total_count = count1 + count2
+            mean1 = dict1[barcode]['mean_insertsize']
+            mean2 = dict2[barcode]['mean_insertsize']
+            # Compute weighted mean
+            weighted_mean = (mean1 * count1 + mean2 * count2) / total_count if total_count != 0 else 0
+
+            # Merge distributions using element-wise addition (assumes numpy arrays)
+            dist1 = dict1[barcode]['dist']
+            dist2 = dict2[barcode]['dist']
+            merged_dist = dist1 + dist2
+
+            merged_dict[barcode] = {
+                'insertsize_count': total_count,
+                'mean_insertsize': weighted_mean,
+                'dist': merged_dist
+            }
+        elif barcode in dict1:
+            merged_dict[barcode] = dict1[barcode]
+        else:
+            merged_dict[barcode] = dict2[barcode]
+    return merged_dict
 
 
 @beartype
@@ -481,3 +574,10 @@ def insertsize_from_bam(bamfile: str,
     print("Done getting insertsizes from fragments!")
 
     return table
+
+if __name__ == "__main__":
+    print(os.getcwd())
+    fragments = '/mnt/workspace2/jdetlef/experimental/16-peakqc/50m.tsv.gz'
+    dist = insertsize_from_fragments(fragments, n_threads=8)
+
+    #print(dist)
