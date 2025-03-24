@@ -95,16 +95,16 @@ def test_count_fragments_worker(chunk):
     insertsizes.init_worker([Lock()])
 
     # Init a dictionary to store the results
-    insertsizes_dicts = [{'output': {}}]
+    insertsizes_dicts = [{}]
 
     # Call the function with the mock lock and the mock dictionary
     insertsizes._count_fragments_worker(chunk, 0, insertsizes_dicts)
 
     # Check that the dictionary contains the expected results
-    assert len(insertsizes_dicts[0]['output']) == 18881  # Number of unique cell barcodes in the chunk
-    assert round(insertsizes_dicts[0]['output']['AGGGATAAACCACCGAAGGTCA']['mean_insertsize']) == 140  # Mean insert size for a specific cell barcode
-    assert insertsizes_dicts[0]['output']['AGGGATAAACCACCGAAGGTCA']['insertsize_count'] == 38  # Number of fragments for a specific cell barcode
-    assert int(insertsizes_dicts[0]['output']['AGGGATAAACCACCGAAGGTCA']['dist'].sum()) == 38  # Number of fragments in the distribution for a specific cell barcode
+    assert len(insertsizes_dicts[0]) == 18881  # Number of unique cell barcodes in the chunk
+    assert round(insertsizes_dicts[0]['AGGGATAAACCACCGAAGGTCA']['mean_insertsize']) == 140  # Mean insert size for a specific cell barcode
+    assert insertsizes_dicts[0]['AGGGATAAACCACCGAAGGTCA']['insertsize_count'] == 38  # Number of fragments for a specific cell barcode
+    assert int(insertsizes_dicts[0]['AGGGATAAACCACCGAAGGTCA']['dist'].sum()) == 38  # Number of fragments in the distribution for a specific cell barcode
 
 
 def test_add_fragment_counts():
