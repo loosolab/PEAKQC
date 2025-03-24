@@ -236,6 +236,7 @@ def insertsize_from_fragments(fragments: str,
 def clean_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
     """
     Clean a chunk of a fragments file by removing rows with missing or malformed data.
+
     Removes rows where 'start' or 'stop' columns cannot be converted to numeric values (header or malformed rows).
 
     Parameters
@@ -555,5 +556,3 @@ if __name__ == "__main__":
     print(os.getcwd())
     fragments = '/mnt/workspace2/jdetlef/experimental/16-peakqc/50m.tsv.gz'
     dist = insertsize_from_fragments(fragments, n_threads=8)
-
-    #print(dist)
