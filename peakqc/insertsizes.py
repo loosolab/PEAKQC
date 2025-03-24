@@ -95,9 +95,20 @@ def _custom_callback(error: Exception) -> None:
 
 GLOBAL_SHARD_LOCKS = None
 
-def init_worker(shard_locks):
+
+@beartype
+def init_worker(shard_locks: list[Lock]) -> None:
     """
-    Initializer for worker processes to set global locks.
+    Initialize global locks for worker processes.
+
+    Parameters
+    ----------
+    shard_locks : list[Lock]
+        List of locks for each shard.
+
+    Returns
+    -------
+    None
     """
     global GLOBAL_SHARD_LOCKS
     GLOBAL_SHARD_LOCKS = shard_locks
@@ -109,7 +120,7 @@ def insertsize_from_fragments(fragments: str,
                               chunk_size: int = 5000000,
                               n_threads: int = 8,
                               n_shards: int = 4,
-                              verbose: bool =True) -> pd.DataFrame:
+                              verbose: bool = True) -> pd.DataFrame:
     """
     Count the insertsizes of fragments in a fragments file to obtain the insertsize size distribution, beside basic statistics (mean and total count) per barcode.
 
@@ -123,6 +134,10 @@ def insertsize_from_fragments(fragments: str,
         Size of chunks to split the genome into.
     n_threads : int, default 8
         Number of threads to use for multiprocessing.
+    n_shards : int, default 4
+        Number of shards to use for multiprocessing.
+    verbose : bool, default True
+        Print process shard affiliation.
 
     Returns
     -------
@@ -201,7 +216,7 @@ def insertsize_from_fragments(fragments: str,
     # Final merge: combine all shard dictionaries into one final result
     final_dict = {}
     for d in managed_dicts:
-        final_dict = optimized_update_count_dict(final_dict, dict(d))
+        final_dict = _update_count_dict(final_dict, dict(d))
 
     end_time = datetime.datetime.now()
     elapsed = end_time - start_time
@@ -219,6 +234,19 @@ def insertsize_from_fragments(fragments: str,
 
 
 def clean_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean a chunk of a fragments file by removing rows with missing or malformed data.
+    Removes rows where 'start' or 'stop' columns cannot be converted to numeric values (header or malformed rows).
+
+    Parameters
+    ----------
+    chunk: pd.DataFrame
+
+    Returns
+    -------
+    pd.DataFrame
+        Cleaned chunk
+    """
     # Attempt to convert the 'start' and 'stop' columns to numeric values
     chunk[['start', 'stop']] = chunk[['start', 'stop']].apply(pd.to_numeric, errors='coerce')
     # Drop rows where conversion failed (i.e., header or malformed rows)
@@ -232,7 +260,7 @@ def clean_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
 
 def _count_fragments_worker(chunk: pd.DataFrame,
                             shard_index: int,
-                            managed_dicts,
+                            managed_dicts: list[dict],
                             barcodes: Optional[list[str]] = None,
                             check_in: Any = _check_true) -> None:
     """
@@ -242,12 +270,14 @@ def _count_fragments_worker(chunk: pd.DataFrame,
     ----------
     chunk : pd.DataFrame
         Chunk of the fragments file.
+    shard_index : int
+        Index of the shard to update.
+    managed_dicts : list[dict], default None
+        Dictionary for multiprocessing.
     barcodes : list[str], optional
         List of barcodes to count. If None, all barcodes are counted.
     check_in : Any, default _check_true
         Function for checking if barcode is in barcodes list.
-    managed_dict : dict, default None
-        Dictionary for multiprocessing.
 
     Returns
     -------
@@ -272,7 +302,7 @@ def _count_fragments_worker(chunk: pd.DataFrame,
     # Update managed_dict
     with GLOBAL_SHARD_LOCKS[shard_index]:
         current_dict = dict(managed_dicts[shard_index])
-        new_dict = optimized_update_count_dict(current_dict, local_update)
+        new_dict = _update_count_dict(current_dict, local_update)
         managed_dicts[shard_index].clear()
         managed_dicts[shard_index].update(new_dict)
 
@@ -329,76 +359,21 @@ def _add_fragment(count_dict: dict,
 
 
 @beartype
-def _update_count_dict(count_dict_1: dict, count_dict_2: dict) -> dict:
+def _update_count_dict(dict1: dict, dict2: dict) -> dict:
     """
     Update the managed dict with the new counts.
 
     Parameters
     ----------
-    count_dict_1 : dict
+    dict1 : dict
         Dictionary containing the counts per insertsize.
-    count_dict_2 : dict
+    dict2 : dict
         Dictionary containing the counts per insertsize.
 
     Returns
     -------
     dict
         Updated count_dict.
-    """
-    # Check if count_dict_1 is empty:
-    if len(count_dict_1) == 0:
-        return count_dict_2
-
-    # make Dataframes for computation
-    df1 = pd.DataFrame(count_dict_1).T
-    df2 = pd.DataFrame(count_dict_2).T
-
-    # merge distributions
-    combined_dists = df1['dist'].combine(df2['dist'], func=_update_dist)
-    # merge counts
-    merged_counts = pd.merge(df1["insertsize_count"], df2["insertsize_count"], left_index=True, right_index=True,
-                             how='outer').infer_objects(copy=False).fillna(0)
-    # sum total counts/barcode
-    updated_counts = merged_counts.sum(axis=1)
-
-    # calculate scaling factors
-    x_scaling_factor = merged_counts["insertsize_count_x"] / updated_counts
-    y_scaling_factor = merged_counts["insertsize_count_y"] / updated_counts
-
-    # merge mean insertsizes
-    merged_mean_insertsizes = pd.merge(df1["mean_insertsize"], df2["mean_insertsize"], left_index=True,
-                                       right_index=True, how='outer').infer_objects(copy=False).fillna(0)
-
-    # scale mean insertsizes
-    merged_mean_insertsizes["mean_insertsize_x"] = merged_mean_insertsizes["mean_insertsize_x"] * x_scaling_factor
-    merged_mean_insertsizes["mean_insertsize_y"] = merged_mean_insertsizes["mean_insertsize_y"] * y_scaling_factor
-
-    # sum the scaled means
-    updated_means = merged_mean_insertsizes.sum(axis=1)
-
-    # build the updated dictionary
-    updated_dict = pd.DataFrame(
-        {'mean_insertsize': updated_means, 'insertsize_count': updated_counts, 'dist': combined_dists}).T.to_dict()
-
-    return updated_dict
-
-
-def optimized_update_count_dict(dict1: dict, dict2: dict) -> dict:
-    """
-    Merge two dictionaries containing 'mean_insertsize', 'insertsize_count', and 'dist'
-    using NumPy for optimized performance.
-
-    Parameters:
-    ----------
-    dict1 : dict
-        First dictionary with barcode keys.
-    dict2 : dict
-        Second dictionary with barcode keys.
-
-    Returns:
-    -------
-    dict
-        Merged dictionary.
     """
     merged_dict = {}
     # Gather all barcodes from both dictionaries
@@ -574,6 +549,7 @@ def insertsize_from_bam(bamfile: str,
     print("Done getting insertsizes from fragments!")
 
     return table
+
 
 if __name__ == "__main__":
     print(os.getcwd())
