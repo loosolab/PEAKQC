@@ -17,24 +17,6 @@ from beartype.typing import Any, Optional
 
 
 @beartype
-def init_pool_processes(the_lock: Any) -> None:
-    """
-    Initialize each process with a global variable lock.
-
-    Parameters
-    ----------
-    the_lock : Any
-        Lock object to be used by the processes.
-
-    Returns
-    -------
-    None
-    """
-    global lock
-    lock = the_lock
-
-
-@beartype
 def _check_in_list(element: Any, alist: list[Any] | set[Any]) -> bool:
     """
     Check if element is in list.

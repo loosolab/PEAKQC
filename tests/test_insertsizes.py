@@ -47,17 +47,12 @@ def chunk():
     return pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', 'example_chunk.csv'))
 
 
-def test_init_pool_processes():
-    """Test the init_pool_processes function."""
+def test_init_worker_sets_global_shard_locks():
+    """Test that the init_worker function sets the GLOBAL_SHARD_LOCKS variable."""
 
-    # Create a mock lock object
-    lock_instance = Lock()
-
-    # Call the function with the mock lock
-    insertsizes.init_pool_processes(lock_instance)
-
-    # Check that the lock is set to the mock lock
-    assert insertsizes.lock == lock_instance
+    test_locks = [Lock() for _ in range(3)]
+    insertsizes.init_worker(test_locks)
+    assert insertsizes.GLOBAL_SHARD_LOCKS == test_locks
 
 
 def test_check_in_list():
@@ -96,17 +91,14 @@ def test_custom_callback(capfd):
 def test_count_fragments_worker(chunk):
     """Test the count_fragments_worker function."""
 
-    # Create a mock lock object
-    lock_instance = Lock()
-
     # Call the function with the mock lock
-    insertsizes.init_pool_processes(lock_instance)
+    insertsizes.init_worker([Lock])
 
     # Init a dictionary to store the results
-    insertsizes_dict = {'output': {}}
+    insertsizes_dict = [{'output': {}}]
 
     # Call the function with the mock lock and the mock dictionary
-    insertsizes._count_fragments_worker(chunk, insertsizes_dict)
+    insertsizes._count_fragments_worker(chunk, 0,insertsizes_dict)
 
     # Check that the dictionary contains the expected results
     assert len(insertsizes_dict['output']) == 18881  # Number of unique cell barcodes in the chunk
