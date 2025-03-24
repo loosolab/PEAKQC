@@ -106,7 +106,7 @@ def test_count_fragments_worker(chunk):
     insertsizes_dict = {'output': {}}
 
     # Call the function with the mock lock and the mock dictionary
-    insertsizes._count_fragments_worker(chunk, managed_dict=insertsizes_dict)
+    insertsizes._count_fragments_worker(chunk, insertsizes_dict)
 
     # Check that the dictionary contains the expected results
     assert len(insertsizes_dict['output']) == 18881  # Number of unique cell barcodes in the chunk
