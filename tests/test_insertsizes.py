@@ -92,7 +92,7 @@ def test_count_fragments_worker(chunk):
     """Test the count_fragments_worker function."""
 
     # Call the function with the mock lock
-    insertsizes.init_worker([Lock])
+    insertsizes.init_worker([Lock()])
 
     # Init a dictionary to store the results
     insertsizes_dict = [{'output': {}}]
