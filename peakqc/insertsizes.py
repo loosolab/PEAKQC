@@ -96,7 +96,6 @@ def _custom_callback(error: Exception) -> None:
 GLOBAL_SHARD_LOCKS = None
 
 
-@beartype
 def init_worker(shard_locks: list[Lock]) -> None:
     """
     Initialize global locks for worker processes.
