@@ -66,7 +66,7 @@ def main():
     modules = get_modules(package_dir)
 
     # Add the module rst files to the index.rst
-    with open("API/index.rst", 'w') as index_fp:
+    with open("index.rst", 'w') as index_fp:
         index_fp.write(header("API Documentation", 0))
 
         for module in modules:
