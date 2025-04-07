@@ -13,22 +13,8 @@ RUN apt-get update --assume-yes
 # install git to check for file changes
 RUN apt-get install -y git
 
-# create a non-root user
-RUN useradd --no-log-init -r -g users user
-
-# setup home directory
-WORKDIR /home/user
-
-# change owner and permissions to all users
-RUN chown -R :users /opt && \
-    chown -R :users /tmp && \
-    chown -R :users /home/user && \
-    chmod -R 775 /opt && \
-    chmod -R 775 /tmp && \
-    chmod -R 775 /home/user
-
-# switch to non-root user for safer operations
-USER user
+# install other dependencies
+RUN apt-get install -y make
 
 # update mamba
 RUN mamba update -n base mamba && \
@@ -44,9 +30,6 @@ RUN pip install "/tmp/" && \
     pip install pytest-html && \
     pip install pytest-mock
 
-# change user to cleanup and install ssh
-USER root 
-
 # clear tmp
 RUN rm -r /tmp/*
 
@@ -54,6 +37,3 @@ RUN rm -r /tmp/*
 RUN apt-get install -y openssh-client && \
     mkdir .ssh && \
     ssh-keygen -t ed25519 -N "" -f .ssh/id_ed25519
-
-# Switch to non root default user 
-USER user

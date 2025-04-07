@@ -18,6 +18,7 @@ stages:
   - build
   - setup
   - test
+  - deploy
   - .post
 
 # ############################################################################################################################################################
@@ -231,6 +232,89 @@ check-version:
     - if [[ ! ${version} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then exit 1; fi
   rules:
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" # only on MR to main
+
+# ############################################################################################################################################################
+# ######################################################### Build and deploy documentation ###################################################################
+# ############################################################################################################################################################
+
+build-pages:
+  image: "$CI_REGISTRY_IMAGE:$DYNAMIC_IMAGE_TAG"
+  needs: 
+    - job: get-container-tag
+      artifacts: true
+  stage: deploy
+  before_script:
+    - pip install .
+  script:
+    - apt-get autoclean  # fix "You don't have enough free space in /var/cache/apt/archives/."
+    - apt-get update -qq && apt-get install -qq -y pandoc  # system install of pandoc is needed
+    - pip install sphinx sphinx-rtd-theme
+    - pip install sphinx-exec-code
+    - cd docs
+    - make html
+  artifacts:
+    paths:
+      - docs/build/html/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "dev" && $CI_COMMIT_BRANCH != "main" # dev/main are built automatically
+      when: manual
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH == "dev"  # always for commits to dev
+      changes:
+        - peakqc/*.py
+      allow_failure: false
+    - if: $CI_COMMIT_BRANCH == "main"  # always for commits to dev
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"  # all MR
+      when: manual
+      allow_failure: true
+
+deploy-pages:
+  stage: deploy
+  needs:
+    - job: build-pages
+      artifacts: True
+  inherit:
+    default: false
+  environment:
+    name: pages/$CI_COMMIT_REF_NAME
+    url: "https://loosolab.pages.gwdg.de/-/software/peakqc/-/jobs/$CI_JOB_ID/artifacts/docs/build/html/index.html"
+  artifacts:
+    paths:
+      - docs/build/html/
+  script:
+    - ls -l docs/
+    - echo "deploy"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "dev" && $CI_COMMIT_BRANCH != "main" # dev/main are built automatically
+      when: manual
+      allow_failure: true
+    - if: $CI_COMMIT_BRANCH == "dev"  # always for commits to dev
+      changes:
+        - peakqc/*.py
+      allow_failure: false
+    - if: $CI_COMMIT_BRANCH == "main"  # always for commits to dev
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"  # all MR
+      when: manual
+      allow_failure: true
+
+# Deploy documentation to public pages if it was the main branch
+pages:
+  stage: deploy
+  needs:
+    - job: build-pages
+      artifacts: True
+  inherit:
+    default: false
+  script:
+    - mv docs/build/html/ public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" # after accepted MR to main
+      allow_failure: false  # main not allowed to fail
 
 # ############################################################################################################################################################
 # ######################################################### .post #############################################################################################
