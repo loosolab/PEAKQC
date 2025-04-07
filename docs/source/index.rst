@@ -5,7 +5,8 @@
 
 PEAKQC documentation
 ====================
-
+This is the read the docs page of PEAKQC.
+Here you can find guidelines for installation and api documentation.
 
 .. toctree::
    :maxdepth: 2
