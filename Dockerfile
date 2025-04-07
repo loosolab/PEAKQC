@@ -13,6 +13,9 @@ RUN apt-get update --assume-yes
 # install git to check for file changes
 RUN apt-get install -y git
 
+# install other dependencies
+RUN apt-get install -y make
+
 # update mamba
 RUN mamba update -n base mamba && \
     mamba --version
