@@ -4,6 +4,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - sphinx
   - scanpy>=1.9
   - pysam
   - scipy
