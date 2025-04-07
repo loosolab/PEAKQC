@@ -70,7 +70,7 @@ def main():
         index_fp.write(header("API Documentation", 0))
 
         for module in modules:
-            index_fp.write(f"API/{module}.rst\n")
+            index_fp.write(f"   API/{module}.rst\n")
 
     index_fp.close()
 
