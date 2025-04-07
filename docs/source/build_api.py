@@ -65,6 +65,15 @@ def main():
     # Generate the API documentation per module
     modules = get_modules(package_dir)
 
+    # Add the module rst files to the index.rst
+    with open("API/index.rst", 'w') as index_fp:
+        index_fp.write(header("API Documentation", 0))
+
+        for module in modules:
+            index_fp.write(f"API/{module}.rst\n")
+
+    index_fp.close()
+
     # Create one page per module
     for module in modules:
         print(module)
