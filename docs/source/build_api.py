@@ -66,7 +66,7 @@ def main():
     modules = get_modules(package_dir)
 
     # Add the module rst files to the index.rst
-    with open("index.rst", 'w') as index_fp:
+    with open("API/index.rst", 'a') as index_fp:
         index_fp.write(header("Contents:", 0))
         index_fp.write(".. toctree::\n")
         index_fp.write("   :maxdepth: 2\n\n")
