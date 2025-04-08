@@ -79,7 +79,7 @@ def main():
     # Create one page per module
     for module in modules:
         print(module)
-        with open("API/" + module + ".rst", 'w') as fp:
+        with open(  module + ".rst", 'w') as fp:
 
             fp.write(header(module.capitalize(), 1))
 
