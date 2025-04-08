@@ -72,7 +72,7 @@ def main():
         index_fp.write("   :maxdepth: 2\n\n")
 
         for module in modules:
-            index_fp.write(f"   API/{module}\n")
+            index_fp.write(f"   {module}\n")
 
     index_fp.close()
 
@@ -82,10 +82,7 @@ def main():
         with open("API/" + module + ".rst", 'w') as fp:
 
             fp.write(header(module.capitalize(), 1))
-
             fp.write(automodule(f"peakqc.{module}"))
-
-            fp.write(hline())
 
 
 if __name__ == "__main__":
