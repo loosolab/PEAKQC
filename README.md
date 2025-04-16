@@ -2,7 +2,7 @@
 ![Coverage](https://gitlab.gwdg.de/loosolab/software/peakqc/badges/main/coverage.svg?key_text=coverage&key_width=70)
 ![Pipeline](https://gitlab.gwdg.de/loosolab/software/peakqc/badges/main/pipeline.svg?ignore_skipped=true)
 
-![](docs/source/_static/logo.png)
+<img src="docs/source/_static/logo.png" alt="drawing" width="200"/>
 
 Periodicity Evaluation As Key aspect of ATAC-seq Quality Control
 
