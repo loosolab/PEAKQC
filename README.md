@@ -20,7 +20,7 @@ PEAKQC solves this constraint with an convolution based algorithmic approach.
 
 # Api Documentation
 A detailed API documentation is provided by our read the docs page:
-[https://loosolab.pages.gwdg.de/software/peakqc/]
+https://loosolab.pages.gwdg.de/software/peakqc/
 
 # Workflow
 
