@@ -18,7 +18,7 @@ Hereby relies PEAKQC on the evaluation of the fragment length distribution.
 While on the bulk level the evaluation is done visually, it is not possible to do that on the single cell level.
 PEAKQC solves this constraint with an convolution based algorithmic approach.
 
-# Api Documentation
+# API Documentation
 A detailed API documentation is provided by our read the docs page:
 https://loosolab.pages.gwdg.de/software/peakqc/
 
