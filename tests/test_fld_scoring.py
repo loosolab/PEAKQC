@@ -7,7 +7,7 @@ import scanpy as sc
 import numpy as np
 import peakqc.fld_scoring as fld
 import peakqc.insertsizes as ins
-
+from peakqc.fld_scoring import MultithreadedMultinomialSampler
 # ------------------------------- Fixtures and data -------------------------------- #
 
 
@@ -450,7 +450,8 @@ def test_add_fld_metrices(adata, fragments, bamfile):
                         plot=False,
                         save_density=None,
                         save_overview=None,
-                        sample=0)
+                        sample=0,
+                        sample_size=None)
 
     assert 'fld_score' in adata_b.obs.columns
     assert 'mean_fragment_size' in adata_b.obs.columns
@@ -467,8 +468,74 @@ def test_add_fld_metrices(adata, fragments, bamfile):
                         save_density=None,
                         save_overview=None,
                         sample=0,
-                        n_threads=8)
+                        n_threads=8,
+                        sample_size=None)
 
     assert 'fld_score' in adata_f.obs.columns
     assert 'mean_fragment_size' in adata_f.obs.columns
     assert 'n_fragments' in adata_f.obs.columns
+
+
+class Test_MultithreadedMultinomialSampler:
+    """Test class for MultithreadedMultinomialSampler."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        """Create test data."""
+        np.random.seed(42)
+        self.dists_arr = np.array([
+            [100, 200, 300, 400],
+            [1000, 2000, 3000, 4000]
+        ])
+        self.insert_counts = np.sum(self.dists_arr, axis=1)
+        self.reference_dists = self.dists_arr.copy()
+        self.sample_size = 1000
+        # Test container has only one thread
+        self.n_threads = 1
+
+    def _assert(self, result_dists, result_std):
+        """Verify common assertions for all test cases."""
+        # Check shapes
+        assert result_dists.shape == self.reference_dists.shape
+        assert result_std.shape == self.reference_dists.shape
+
+        # Check that only distributions with insert_counts > sample_size are modified
+        mask = self.insert_counts > self.sample_size
+        if np.any(mask):
+            # At least one distribution should be modified
+            assert not np.array_equal(result_dists[mask], self.reference_dists[mask])
+
+        # Not mask should be unchanged
+        not_mask = ~mask
+        if np.any(not_mask):
+            assert np.array_equal(result_dists[not_mask], self.reference_dists[not_mask])
+
+    def test_with_size_1(self):
+        """Test with size=1 and sample_all=False."""
+        sampler = MultithreadedMultinomialSampler(
+            dists_arr=self.dists_arr.copy(),
+            insert_counts=self.insert_counts,
+            sample_size=self.sample_size,
+            n_simulations=10,
+            sample_all=False,
+            size=1,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        result_dists, result_std = sampler.sample()
+        self._assert(result_dists, result_std)
+
+    def test_with_size_5(self):
+        """Test with size=5 and sample_all=False."""
+        sampler = MultithreadedMultinomialSampler(
+            dists_arr=self.dists_arr.copy(),
+            insert_counts=self.insert_counts,
+            sample_size=self.sample_size,
+            n_simulations=10,
+            sample_all=False,
+            size=5,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        result_dists, result_std = sampler.sample()
+        self._assert(result_dists, result_std)
