@@ -343,6 +343,13 @@ cleanup-orphan-tags:
     - crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - |
+      raw=$(curl -s -w "%{http_code}" \
+      --header "PRIVATE-TOKEN: $API_TOKEN" \
+      "https://gitlab.gwdg.de/api/v4/projects/$CI_PROJECT_ID/repository/branches")
+      http=${raw: -3}
+      body=${raw:0:-3}
+      echo "HTTP Status: $http"
+      echo "Body: $body"
       # Fetch all branch names
       BRANCHES=$(curl --silent --header "PRIVATE-TOKEN: $API_TOKEN" "https://gitlab.gwdg.de/api/v4/projects/$CI_PROJECT_ID/repository/branches" | jq -r '.[].name')
       echo "Branches:"
