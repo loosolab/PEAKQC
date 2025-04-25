@@ -4,7 +4,7 @@
 
 <img src="docs/source/_static/logo.png" alt="drawing" width="500"/>
 
-Periodicity Evaluation As Key aspect of ATAC-seq Quality Control
+Periodicity Evaluation in scATAC-seq data for quality assessment
 
 A python tool for ATAC-seq quality control in single cells. 
 On the bulk level quality control approaches rely on four key aspects: 
