@@ -266,6 +266,7 @@ def filter_peaks(peaks: npt.ArrayLike,
 
 # //////////////////////////////////////// Scoring \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
+
 @beartype
 def score_mask(peaks: npt.ArrayLike,
                convolved_data: npt.ArrayLike,
