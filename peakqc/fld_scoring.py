@@ -266,63 +266,6 @@ def filter_peaks(peaks: npt.ArrayLike,
 
 # //////////////////////////////////////// Scoring \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-
-@beartype
-def distances_score(peaks: npt.ArrayLike,
-                    momentum: npt.ArrayLike,
-                    period: int,
-                    penalty_scale: int) -> npt.ArrayLike:
-    """
-    Calculate a score based on the distances between peaks.
-
-    Parameters
-    ----------
-    peaks : npt.ArrayLike
-        Array of peaks.
-    momentum : npt.ArrayLike
-        Array of momentum values.
-    period : int
-        expected distances
-    penalty_scale : int
-        scale parameter for the penalty
-
-    Returns
-    -------
-    npt.ArrayLike
-        Array of scores
-    """
-
-    scores = []
-    # loop over all cells
-    for i in range(len(peaks)):
-        # get peaks and momentum for single cell
-        peak_list = peaks[i]
-        single_momentum = momentum[i]
-
-        # calculate score
-        if len(peak_list) == 0:
-            score = 0
-        elif len(peak_list) == 1:  # if only one peak, score is the momentum at that peak divided by 100
-            score = single_momentum[peak_list[0]] / 100
-        elif len(peak_list) > 1:  # if more than one peak
-            corrected_scores = []
-            for j in range(1, len(peak_list)):  # loop over all peaks
-                amplitude = single_momentum[peak_list[j - 1]] * 2  # amplitude is the momentum at the previous peak
-
-                diff = peak_list[j] - peak_list[j - 1]  # difference between the current and previous peak
-                corrected_score = amplitude - (abs(diff - period) / penalty_scale)  # corrected score
-                if corrected_score < 0:
-                    corrected_score = 0
-
-                corrected_scores.append(corrected_score)  # append corrected score to list
-
-            score = float(np.sum(np.array(corrected_scores))) + 0  # sum all corrected scores
-
-        scores.append(score)  # append score to list
-
-    return scores
-
-
 @beartype
 def score_mask(peaks: npt.ArrayLike,
                convolved_data: npt.ArrayLike,
