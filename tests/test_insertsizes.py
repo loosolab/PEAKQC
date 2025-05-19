@@ -224,7 +224,7 @@ def test_insertsize_from_bam(bam_file, barcodes):
     assert table.shape[0] == 2705  # Number of unique cell barcodes in the table
 
 
-@pytest.mark.parametrize('chunk, response', [(0,49), (1,100)])
+@pytest.mark.parametrize('chunk, response', [(0, 49), (1, 100)])
 def test_clean_chunk(tsv_head_tail, chunk, response):
     """Test the clean_chunk function."""
     cleaned = insertsizes._clean_chunk(tsv_head_tail[chunk])
