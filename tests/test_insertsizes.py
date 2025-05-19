@@ -69,7 +69,7 @@ def test_init_worker_sets_global_shard_locks():
     """Test that the init_worker function sets the GLOBAL_SHARD_LOCKS variable."""
 
     test_locks = [Lock() for _ in range(3)]
-    insertsizes.init_worker(test_locks)
+    insertsizes._init_worker(test_locks)
     assert insertsizes.GLOBAL_SHARD_LOCKS == test_locks
 
 
@@ -110,7 +110,7 @@ def test_count_fragments_worker(chunk):
     """Test the count_fragments_worker function."""
 
     # Call the function with the mock lock
-    insertsizes.init_worker([Lock()])
+    insertsizes._init_worker([Lock()])
 
     # Init a dictionary to store the results
     insertsizes_dicts = [{}]
@@ -227,5 +227,5 @@ def test_insertsize_from_bam(bam_file, barcodes):
 @pytest.mark.parametrize('chunk, response', [(0,49), (1,100)])
 def test_clean_chunk(tsv_head_tail, chunk, response):
     """Test the clean_chunk function."""
-    cleaned = insertsizes.clean_chunk(tsv_head_tail[chunk])
+    cleaned = insertsizes._clean_chunk(tsv_head_tail[chunk])
     assert len(cleaned) == response
