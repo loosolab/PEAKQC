@@ -524,7 +524,7 @@ class Test_MultithreadedMultinomialSampler:
             seed=42,
             n_threads=self.n_threads
         )
-        batch = [0]
+        batch = np.array([0])
         sampler.pbar = Mock()  # mock tqdm
         result = sampler._process_batch(batch)
 
