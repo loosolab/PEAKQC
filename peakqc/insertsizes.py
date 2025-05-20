@@ -78,7 +78,7 @@ def _custom_callback(error: Exception) -> None:
 GLOBAL_SHARD_LOCKS = None
 
 
-def init_worker(shard_locks: list[Lock]) -> None:
+def _init_worker(shard_locks: list[Lock]) -> None:
     """
     Initialize global locks for worker processes.
 
@@ -155,13 +155,13 @@ def insertsize_from_fragments(fragments: str,
     # Create one lock per shard
     shard_locks = [Lock() for _ in range(n_shards)]
 
-    pool = Pool(processes=n_threads, initializer=init_worker, initargs=(shard_locks,))
+    pool = Pool(processes=n_threads, initializer=_init_worker, initargs=(shard_locks,))
     tasks = []
     max_active_tasks = n_shards + 1  # Limit active tasks to this number
     shard_counter = 0
     # Distribute chunks to workers, assigning shard index in round-robin fashion
     for i, chunk in enumerate(iterator):
-        chunk = clean_chunk(chunk)
+        chunk = _clean_chunk(chunk)
         shard_index = shard_counter % n_shards
         if verbose:
             print(f"Processing chunk {i} on shard {shard_index}")
@@ -214,7 +214,7 @@ def insertsize_from_fragments(fragments: str,
     return table
 
 
-def clean_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
+def _clean_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
     """
     Clean a chunk of a fragments file by removing rows with missing or malformed data.
 
@@ -535,5 +535,5 @@ def insertsize_from_bam(bamfile: str,
 
 if __name__ == "__main__":
     print(os.getcwd())
-    fragments = '/mnt/workspace2/jdetlef/experimental/16-peakqc/50m.tsv.gz'
+    fragments = ''
     dist = insertsize_from_fragments(fragments, n_threads=8)

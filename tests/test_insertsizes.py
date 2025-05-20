@@ -11,6 +11,24 @@ import peakqc.insertsizes as insertsizes
 
 
 @pytest.fixture
+def tsv_head_tail():
+    """Return a tuple of the header section mixed with body and body only."""
+    fragments = os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', '200_lines_atac_pbmc_5k_nextgem_fragments.tsv.gz')
+
+    iterator = pd.read_csv(fragments,
+                           delimiter='\t',
+                           header=None,
+                           names=['chr', 'start', 'stop', 'barcode', 'count'],
+                           iterator=True,
+                           chunksize=100)
+
+    chunk_with_header = next(iterator)
+    chunk_without_header = next(iterator)
+
+    return chunk_with_header, chunk_without_header
+
+
+@pytest.fixture
 def barcodes():
     """Return a barcodes file."""
     path_barcodes = os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', 'barcodes.txt')
@@ -51,7 +69,7 @@ def test_init_worker_sets_global_shard_locks():
     """Test that the init_worker function sets the GLOBAL_SHARD_LOCKS variable."""
 
     test_locks = [Lock() for _ in range(3)]
-    insertsizes.init_worker(test_locks)
+    insertsizes._init_worker(test_locks)
     assert insertsizes.GLOBAL_SHARD_LOCKS == test_locks
 
 
@@ -92,7 +110,7 @@ def test_count_fragments_worker(chunk):
     """Test the count_fragments_worker function."""
 
     # Call the function with the mock lock
-    insertsizes.init_worker([Lock()])
+    insertsizes._init_worker([Lock()])
 
     # Init a dictionary to store the results
     insertsizes_dicts = [{}]
@@ -204,3 +222,10 @@ def test_insertsize_from_bam(bam_file, barcodes):
                                             regions='chr1:1-100000')
 
     assert table.shape[0] == 2705  # Number of unique cell barcodes in the table
+
+
+@pytest.mark.parametrize('chunk, response', [(0, 49), (1, 100)])
+def test_clean_chunk(tsv_head_tail, chunk, response):
+    """Test the clean_chunk function."""
+    cleaned = insertsizes._clean_chunk(tsv_head_tail[chunk])
+    assert len(cleaned) == response
