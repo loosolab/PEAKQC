@@ -2,12 +2,14 @@
 # Author: Jan Detleffsen (jan.detleffsen@mpi-bn.mpg.de)
 
 import pytest
+from unittest.mock import Mock
+
 import os
 import scanpy as sc
 import numpy as np
 import peakqc.fld_scoring as fld
 import peakqc.insertsizes as ins
-from peakqc.fld_scoring import MultithreadedMultinomialSampler
+from peakqc.fld_scoring import _MultithreadedMultinomialSampler
 # ------------------------------- Fixtures and data -------------------------------- #
 
 
@@ -145,7 +147,7 @@ def test_moving_average(disturbed_sine):
     Compares a smoothed disturbed sine wave to the original and inspects the difference.
     """
     disturbed_sine_wave, sine_wave = disturbed_sine
-    smoothed_sine = fld.moving_average(disturbed_sine_wave, n=10)
+    smoothed_sine = fld._moving_average(disturbed_sine_wave, n=10)
 
     diff_smooth = np.sum(abs(sine_wave - smoothed_sine))
     diff_disturbed = np.sum(abs(sine_wave - disturbed_sine_wave))
@@ -159,7 +161,7 @@ def test_moving_average(disturbed_sine):
 def test_multi_ma(stack_sines):
     """Test that the multi_ma function works as expected by comparing a smoothed disturbed sine wave to the original."""
     sine_stack, dist_stack = stack_sines
-    smoothed = fld.multi_ma(dist_stack)
+    smoothed = fld._multi_ma(dist_stack)
 
     diff_ori = abs(sine_stack - dist_stack)
     diff_smooth = abs(sine_stack - smoothed)
@@ -177,8 +179,8 @@ def test_multi_ma(stack_sines):
 def test_scale(count_table):
     """Test that the scale function works as expected by checking that the max value is 1 and the min value is 0."""
 
-    scaled = fld.scale(count_table)
-    scaled_single = fld.scale(count_table[0])
+    scaled = fld._scale(count_table)
+    scaled_single = fld._scale(count_table[0])
 
     assert np.max(scaled) == 1
     assert np.min(scaled) == 0
@@ -189,14 +191,14 @@ def test_scale(count_table):
 
 def test_call_peaks_worker(good_modulation):
     """Test that the call_peaks_worker function works as expected."""
-    peaks = fld.call_peaks_worker(good_modulation)
+    peaks = fld._call_peaks_worker(good_modulation)
 
     assert (peaks == np.array([46, 204])).all()
 
 
 def test_call_peaks(good_modulation):
     """Test that the call_peaks function works as expected."""
-    peaks = fld.call_peaks([good_modulation, good_modulation])
+    peaks = fld._call_peaks([good_modulation, good_modulation])
 
     assert (peaks[0] == np.array([46, 204])).all()
     assert len(peaks) == 2
@@ -207,8 +209,8 @@ def test_filter_peaks(disturbed_sine):
     peaks = np.array([50, 250, 400, 500, 999])
     disturbed_sine_wave, sine_wave = disturbed_sine
 
-    filtered_peaks = fld.filter_peaks(peaks, sine_wave, peaks_thr=0.75, operator="bigger")
-    filtered_peaks_smaller = fld.filter_peaks(peaks, sine_wave, peaks_thr=0.75, operator="smaller")
+    filtered_peaks = fld._filter_peaks(peaks, sine_wave, peaks_thr=0.75, operator="bigger")
+    filtered_peaks_smaller = fld._filter_peaks(peaks, sine_wave, peaks_thr=0.75, operator="smaller")
 
     assert len(filtered_peaks) == 1
     assert filtered_peaks[0] == 250
@@ -232,7 +234,7 @@ def test_gauss():
     x = np.linspace(-4, 4, 1000)
     mu = 0
     sig = 0.5
-    gauss = fld.gauss(x, mu, sig)
+    gauss = fld._gauss(x, mu, sig)
 
     assert gauss[350] < 0.1
     assert gauss[499] == 1
@@ -241,7 +243,7 @@ def test_gauss():
     x = np.linspace(-4, 4, 1000)
     mu = 2
     sig = 0.4
-    gauss = fld.gauss(x, mu, sig)
+    gauss = fld._gauss(x, mu, sig)
 
     assert gauss[600] < 0.1
     assert gauss[749] == 1
@@ -249,7 +251,7 @@ def test_gauss():
     x = np.linspace(-4, 4, 1000)
     mu = 0
     sig = 1
-    gauss = fld.gauss(x, mu, sig)
+    gauss = fld._gauss(x, mu, sig)
 
     assert gauss[200] < 0.1
     assert round(gauss[500], 1) == 1
@@ -259,12 +261,12 @@ def test_gauss():
 def test_build_score_mask():
     """Test that the build_score_mask function works as expected."""
 
-    mask, figure = fld.build_score_mask(plot=True,
-                                        save='density_plot_test.png',
-                                        mu_list=[42, 200, 360, 550],
-                                        sigma_list=[25, 35, 45, 25])
+    mask, figure = fld._build_score_mask(plot=True,
+                                         save='density_plot_test.png',
+                                         mu_list=[42, 200, 360, 550],
+                                         sigma_list=[25, 35, 45, 25])
 
-    assert (np.array([42, 200, 360, 549]) == np.concatenate(fld.call_peaks(mask))).all()
+    assert (np.array([42, 200, 360, 549]) == np.concatenate(fld._call_peaks(mask))).all()
 
     ax_type = type(figure[0]).__name__
     assert ax_type.startswith("Figure")
@@ -274,32 +276,32 @@ def test_build_score_mask():
     assert os.path.isfile('density_plot_test.png')
     os.remove('density_plot_test.png')
 
-    mask = fld.build_score_mask(plot=False,
-                                save=None,
-                                mu_list=[42, 200, 360, 550],
-                                sigma_list=[25, 35, 45, 25])
+    mask = fld._build_score_mask(plot=False,
+                                 save=None,
+                                 mu_list=[42, 200, 360, 550],
+                                 sigma_list=[25, 35, 45, 25])
 
-    assert (np.array([42, 200, 360, 549]) == np.concatenate(fld.call_peaks(mask))).all()
+    assert (np.array([42, 200, 360, 549]) == np.concatenate(fld._call_peaks(mask))).all()
 
 
 def test_score_mask(good_modulation, bad_modulation):
     """Test that the score_mask function works as expected."""
-    good_fit = fld.custom_conv(np.array([good_modulation]))
-    good_peaks = fld.call_peaks(good_fit)
-    good_peaks = fld.filter_peaks(good_peaks, reference=good_fit, peaks_thr=150, operator="bigger")
-    good_score = fld.score_mask(good_peaks, good_fit)
-    bad_fit = fld.custom_conv([bad_modulation])
-    bad_peaks = fld.call_peaks(bad_fit)
-    bad_peaks = fld.filter_peaks(bad_peaks, reference=bad_fit, peaks_thr=150, operator="bigger")
-    bad_score = fld.score_mask(bad_peaks, bad_fit)
+    good_fit = fld._custom_conv(np.array([good_modulation]))
+    good_peaks = fld._call_peaks(good_fit)
+    good_peaks = fld._filter_peaks(good_peaks, reference=good_fit, peaks_thr=150, operator="bigger")
+    good_score = fld._score_mask(good_peaks, good_fit)
+    bad_fit = fld._custom_conv([bad_modulation])
+    bad_peaks = fld._call_peaks(bad_fit)
+    bad_peaks = fld._filter_peaks(bad_peaks, reference=bad_fit, peaks_thr=150, operator="bigger")
+    bad_score = fld._score_mask(bad_peaks, bad_fit)
 
     assert good_score[0] > bad_score[0]
 
 
 def test_custom_conv(good_modulation, bad_modulation):
     """Test that the custom_conv function works as expected."""
-    good_fit = fld.custom_conv(good_modulation)
-    bad_fit = fld.custom_conv(bad_modulation)
+    good_fit = fld._custom_conv(good_modulation)
+    bad_fit = fld._custom_conv(bad_modulation)
 
     assert np.sum(good_fit) > np.sum(bad_fit)
 
@@ -307,29 +309,29 @@ def test_custom_conv(good_modulation, bad_modulation):
 def test_cos_wavelet():
     """Test that the cos_wavelet function works as expected."""
     # check for the correct wavelength
-    wav_1 = fld.cos_wavelet(wavelength=100,
-                            amplitude=1.0,
-                            phase_shift=0,
-                            mu=0.0,
-                            sigma=10,
-                            plot=False,
-                            save=None)
+    wav_1 = fld._cos_wavelet(wavelength=100,
+                             amplitude=1.0,
+                             phase_shift=0,
+                             mu=0.0,
+                             sigma=10,
+                             plot=False,
+                             save=None)
 
-    peaks_1 = fld.call_peaks([wav_1])  # call peaks to get the center
+    peaks_1 = fld._call_peaks([wav_1])  # call peaks to get the center
 
     assert 99 == peaks_1[0][1] - peaks_1[0][0]  # check if the wavelength is correct
     assert 100 == peaks_1[0][2] - peaks_1[0][1]  # check if the wavelength is correct
 
     # check if the wavelet is centered
-    wav_2 = fld.cos_wavelet(wavelength=100,
-                            amplitude=1.0,
-                            phase_shift=0,
-                            mu=0.0,
-                            sigma=0.4,
-                            plot=False,
-                            save=None)
+    wav_2 = fld._cos_wavelet(wavelength=100,
+                             amplitude=1.0,
+                             phase_shift=0,
+                             mu=0.0,
+                             sigma=0.4,
+                             plot=False,
+                             save=None)
 
-    peaks_2 = fld.call_peaks([wav_2])  # call peaks to get the center
+    peaks_2 = fld._call_peaks([wav_2])  # call peaks to get the center
     assert np.where(np.max(wav_2) == wav_2)[0][0] == 149  # check if centered
 
     # check if sigma scales the cosine
@@ -337,36 +339,36 @@ def test_cos_wavelet():
     assert round(wav_2[peaks_2[0][0]] / wav_2[peaks_2[0][1]], 1) == 0.3
 
     # check if its shifting
-    wav_3 = fld.cos_wavelet(wavelength=100,
-                            amplitude=1.0,
-                            phase_shift=np.pi,
-                            mu=0.0,
-                            sigma=10,
-                            plot=False,
-                            save=None)
+    wav_3 = fld._cos_wavelet(wavelength=100,
+                             amplitude=1.0,
+                             phase_shift=np.pi,
+                             mu=0.0,
+                             sigma=10,
+                             plot=False,
+                             save=None)
 
-    peaks_3 = fld.call_peaks([wav_3])  # call peaks to get the center
+    peaks_3 = fld._call_peaks([wav_3])  # call peaks to get the center
     peaks_3[0][0] == 100
     peaks_3[0][1] == 199  # half the wavelength shift compared to before
 
-    wav_4 = fld.cos_wavelet(wavelength=100,
-                            amplitude=1.0,
-                            phase_shift=0,
-                            mu=100,
-                            sigma=0.4,
-                            plot=False,
-                            save=None)
+    wav_4 = fld._cos_wavelet(wavelength=100,
+                             amplitude=1.0,
+                             phase_shift=0,
+                             mu=100,
+                             sigma=0.4,
+                             plot=False,
+                             save=None)
 
     assert np.where(np.max(wav_4) == wav_4)[0][0] == 249  # one wavelength shift for the gauss curve compared to before
 
     # test if plotting works
-    _, figure = fld.cos_wavelet(wavelength=100,
-                                amplitude=1.0,
-                                phase_shift=0,
-                                mu=0.0,
-                                sigma=10,
-                                plot=True,
-                                save='cos_wavelet_test.png')
+    _, figure = fld._cos_wavelet(wavelength=100,
+                                 amplitude=1.0,
+                                 phase_shift=0,
+                                 mu=0.0,
+                                 sigma=10,
+                                 plot=True,
+                                 save='cos_wavelet_test.png')
 
     ax_type = type(figure[0]).__name__
     assert ax_type.startswith("Figure")
@@ -381,7 +383,7 @@ def test_cos_wavelet():
 def test_get_wavelets():
     """Test that the get_wavelet function works as expected."""
     wavelengths = [100, 200, 300]
-    wavelets = fld.get_wavelets(wavelengths, sigma=0.4)
+    wavelets = fld._get_wavelets(wavelengths, sigma=0.4)
 
     assert len(wavelets) == 3
 
@@ -389,18 +391,18 @@ def test_get_wavelets():
 def test_wavelet_tranformation_fld(cosine_modulation):
     """Test that the wavelet_tranformation function works as expected."""
     wavelengths = [25, 50, 75, 100, 125, 150, 175, 200]
-    wav_t = fld.wavelet_transform_fld(dists_arr=[cosine_modulation, cosine_modulation], wavelengths=wavelengths)
+    wav_t = fld._wavelet_transform_fld(dists_arr=[cosine_modulation, cosine_modulation], wavelengths=wavelengths)
 
-    assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][0]], distance=1, width=0)))) == 25
-    assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][2]], distance=1, width=0)))) == 75
-    assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][4]], distance=1, width=0)))) == 100
-    assert round(np.mean(np.diff(fld.call_peaks([wav_t[0][6]], distance=1, width=0)))) == 151
+    assert round(np.mean(np.diff(fld._call_peaks([wav_t[0][0]], distance=1, width=0)))) == 25
+    assert round(np.mean(np.diff(fld._call_peaks([wav_t[0][2]], distance=1, width=0)))) == 75
+    assert round(np.mean(np.diff(fld._call_peaks([wav_t[0][4]], distance=1, width=0)))) == 100
+    assert round(np.mean(np.diff(fld._call_peaks([wav_t[0][6]], distance=1, width=0)))) == 151
 
 
 def test_score_by_conv(good_modulation, bad_modulation):
     """Test that the score_by_conv function works as expected."""
-    good_score = fld.score_by_conv([good_modulation])
-    bad_score = fld.score_by_conv([bad_modulation])
+    good_score = fld._score_by_conv([good_modulation])
+    bad_score = fld._score_by_conv([bad_modulation])
 
     assert good_score > bad_score
 
@@ -408,9 +410,9 @@ def test_score_by_conv(good_modulation, bad_modulation):
 def test_plot_wavelet_transformation(cosine_modulation):
     """Test that the plot_wavelet_transformation function works as expected."""
     wavelengths = [25, 50, 75, 100, 125, 150, 175, 200]
-    wav_t = fld.wavelet_transform_fld(dists_arr=[cosine_modulation], wavelengths=wavelengths)
+    wav_t = fld._wavelet_transform_fld(dists_arr=[cosine_modulation], wavelengths=wavelengths)
 
-    axes = fld.plot_wavelet_transformation(wav_t[0], wavelengths, cosine_modulation, save='wavelet_transformation_test.png')
+    axes = fld._plot_wavelet_transformation(wav_t[0], wavelengths, cosine_modulation, save='wavelet_transformation_test.png')
 
     ax_type = type(axes[0]).__name__
     assert ax_type.startswith("Axes")
@@ -421,10 +423,10 @@ def test_plot_wavelet_transformation(cosine_modulation):
 
 def test_plot_custom_conv(good_modulation):
     """Test that the plot_custom_conv function works as expected."""
-    convolution = fld.custom_conv([good_modulation])
-    peaks = fld.call_peaks(convolution)
-    scores = fld.score_mask(peaks, convolution)
-    axes = fld.plot_custom_conv(convolution, [good_modulation], peaks, scores, save='custom_conv_test.png')
+    convolution = fld._custom_conv([good_modulation])
+    peaks = fld._call_peaks(convolution)
+    scores = fld._score_mask(peaks, convolution)
+    axes = fld._plot_custom_conv(convolution, [good_modulation], peaks, scores, save='custom_conv_test.png')
 
     ax_type = type(axes[0]).__name__
     assert ax_type.startswith("Axes")
@@ -510,9 +512,9 @@ class Test_MultithreadedMultinomialSampler:
         if np.any(not_mask):
             assert np.array_equal(result_dists[not_mask], self.reference_dists[not_mask])
 
-    def test_with_size_1(self):
+    def test_process_batch(self):
         """Test with size=1 and sample_all=False."""
-        sampler = MultithreadedMultinomialSampler(
+        sampler = _MultithreadedMultinomialSampler(
             dists_arr=self.dists_arr.copy(),
             insert_counts=self.insert_counts,
             sample_size=self.sample_size,
@@ -522,12 +524,33 @@ class Test_MultithreadedMultinomialSampler:
             seed=42,
             n_threads=self.n_threads
         )
-        result_dists, result_std = sampler.sample()
+        batch = np.array([0])
+        sampler.pbar = Mock()  # mock tqdm
+        result = sampler._process_batch(batch)
+
+        assert isinstance(result, dict)
+        assert 0 in result
+        assert len(result[0][0]) == 4
+        assert len(result[0][1]) == 4
+
+    def test_with_size_1(self):
+        """Test with size=1 and sample_all=False."""
+        sampler = _MultithreadedMultinomialSampler(
+            dists_arr=self.dists_arr.copy(),
+            insert_counts=self.insert_counts,
+            sample_size=self.sample_size,
+            n_simulations=10,
+            sample_all=False,
+            size=1,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        result_dists, result_std = sampler._sample()
         self._assert(result_dists, result_std)
 
     def test_with_size_5(self):
         """Test with size=5 and sample_all=False."""
-        sampler = MultithreadedMultinomialSampler(
+        sampler = _MultithreadedMultinomialSampler(
             dists_arr=self.dists_arr.copy(),
             insert_counts=self.insert_counts,
             sample_size=self.sample_size,
@@ -537,5 +560,5 @@ class Test_MultithreadedMultinomialSampler:
             seed=42,
             n_threads=self.n_threads
         )
-        result_dists, result_std = sampler.sample()
+        result_dists, result_std = sampler._sample()
         self._assert(result_dists, result_std)

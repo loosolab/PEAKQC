@@ -23,8 +23,8 @@ import peakqc.insertsizes as insertsizes
 
 
 @beartype
-def moving_average(series: npt.ArrayLike,
-                   n: int = 10) -> npt.ArrayLike:
+def _moving_average(series: npt.ArrayLike,
+                    n: int = 10) -> npt.ArrayLike:
     """
     Move average filter to smooth out data.
 
@@ -63,10 +63,10 @@ def moving_average(series: npt.ArrayLike,
 
 
 @beartype
-def multi_ma(series: npt.ArrayLike,
-             n: int = 2,
-             window_size: int = 10,
-             n_threads: int = 8) -> npt.ArrayLike:
+def _multi_ma(series: npt.ArrayLike,
+              n: int = 2,
+              window_size: int = 10,
+              n_threads: int = 8) -> npt.ArrayLike:
     """
     Multiprocessing wrapper for moving average filter.
 
@@ -97,7 +97,7 @@ def multi_ma(series: npt.ArrayLike,
         # loop over chunks
 
         for dist in series:
-            job = pool.apply_async(moving_average, args=(dist, window_size))
+            job = pool.apply_async(_moving_average, args=(dist, window_size))
             jobs.append(job)
         pool.close()
 
@@ -111,7 +111,7 @@ def multi_ma(series: npt.ArrayLike,
 
 
 @beartype
-def scale(series_arr: npt.ArrayLike) -> npt.ArrayLike:
+def _scale(series_arr: npt.ArrayLike) -> npt.ArrayLike:
     """
     Scale a series array to a range of 0 to 1.
 
@@ -148,10 +148,10 @@ def scale(series_arr: npt.ArrayLike) -> npt.ArrayLike:
 
 
 @beartype
-def call_peaks(data: npt.ArrayLike,
-               n_threads: int = 4,
-               distance: int = 50,
-               width: int = 10) -> npt.ArrayLike:
+def _call_peaks(data: npt.ArrayLike,
+                n_threads: int = 4,
+                distance: int = 50,
+                width: int = 10) -> npt.ArrayLike:
     """
     Find peaks for multiple arrays at once.
 
@@ -182,7 +182,7 @@ def call_peaks(data: npt.ArrayLike,
     jobs = []
 
     for array in data:
-        job = pool.apply_async(call_peaks_worker, args=(array, distance, width))
+        job = pool.apply_async(_call_peaks_worker, args=(array, distance, width))
         jobs.append(job)
     pool.close()
 
@@ -195,9 +195,9 @@ def call_peaks(data: npt.ArrayLike,
 
 
 @beartype
-def call_peaks_worker(array: npt.ArrayLike,
-                      distance: int = 50,
-                      width: int = 10) -> npt.ArrayLike:
+def _call_peaks_worker(array: npt.ArrayLike,
+                       distance: int = 50,
+                       width: int = 10) -> npt.ArrayLike:
     """
     Worker function for multiprocessing of scipy.signal.find_peaks.
 
@@ -222,10 +222,10 @@ def call_peaks_worker(array: npt.ArrayLike,
 
 
 @beartype
-def filter_peaks(peaks: npt.ArrayLike,
-                 reference: npt.ArrayLike,
-                 peaks_thr: SupportsFloat,
-                 operator: Literal['bigger', 'smaller'] = 'bigger') -> npt.ArrayLike:
+def _filter_peaks(peaks: npt.ArrayLike,
+                  reference: npt.ArrayLike,
+                  peaks_thr: SupportsFloat,
+                  operator: Literal['bigger', 'smaller'] = 'bigger') -> npt.ArrayLike:
     """
     Filter peaks based on a reference array and a threshold.
 
@@ -268,10 +268,10 @@ def filter_peaks(peaks: npt.ArrayLike,
 
 
 @beartype
-def score_mask(peaks: npt.ArrayLike,
-               convolved_data: npt.ArrayLike,
-               plot: bool = False,
-               save: Optional[str] = None) -> npt.ArrayLike:
+def _score_mask(peaks: npt.ArrayLike,
+                convolved_data: npt.ArrayLike,
+                plot: bool = False,
+                save: Optional[str] = None) -> npt.ArrayLike:
     """
     Compute a score for each sample based on the convolved data and the peaks multiplied by a score mask.
 
@@ -294,9 +294,9 @@ def score_mask(peaks: npt.ArrayLike,
 
     # build score mask
     if plot:
-        score_mask, _ = build_score_mask(plot=plot, save=save)
+        score_mask, _ = _build_score_mask(plot=plot, save=save)
     else:
-        score_mask = build_score_mask(plot=plot, save=save)
+        score_mask = _build_score_mask(plot=plot, save=save)
 
     scores = []
     # loop over all cells
@@ -326,10 +326,10 @@ def score_mask(peaks: npt.ArrayLike,
 
 
 @beartype
-def build_score_mask(plot: bool = False,
-                     save: Optional[str] = None,
-                     mu_list: list[int] = [42, 200, 360, 550],
-                     sigma_list: list[int] = [25, 35, 45, 25]) -> npt.ArrayLike | tuple[npt.ArrayLike, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]:
+def _build_score_mask(plot: bool = False,
+                      save: Optional[str] = None,
+                      mu_list: list[int] = [42, 200, 360, 550],
+                      sigma_list: list[int] = [25, 35, 45, 25]) -> npt.ArrayLike | tuple[npt.ArrayLike, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]:
     """
     Build a score mask for the score by custom continuous wavelet transformation.
 
@@ -357,7 +357,7 @@ def build_score_mask(plot: bool = False,
     x = np.linspace(0, 1000, 1000)
     gaussians = []
     for mu, sigma in zip(mu_list, sigma_list):
-        gaussians.append(scale((1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)))
+        gaussians.append(_scale((1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)))
 
     gaussians = np.array(gaussians)
 
@@ -381,9 +381,9 @@ def build_score_mask(plot: bool = False,
 
 
 @beartype
-def gauss(x: npt.ArrayLike,
-          mu: int | float,
-          sigma: int | float) -> npt.ArrayLike:
+def _gauss(x: npt.ArrayLike,
+           mu: int | float,
+           sigma: int | float) -> npt.ArrayLike:
     """
     Calculate the values of the Gaussian function for a given x, mu and sigma.
 
@@ -405,7 +405,7 @@ def gauss(x: npt.ArrayLike,
     gaussian = (1 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
     # scale max to 1
-    gaussian = scale(gaussian)
+    gaussian = _scale(gaussian)
 
     return gaussian
 
@@ -413,13 +413,13 @@ def gauss(x: npt.ArrayLike,
 
 
 @beartype
-def cos_wavelet(wavelength: int = 100,
-                amplitude: float | int = 1.0,
-                phase_shift: float | int = 0,
-                mu: float | int = 0.0,
-                sigma: float | int = 0.4,
-                plot: bool = False,
-                save: Optional[str] = None) -> npt.ArrayLike | tuple[npt.ArrayLike, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]:
+def _cos_wavelet(wavelength: int = 100,
+                 amplitude: float | int = 1.0,
+                 phase_shift: float | int = 0,
+                 mu: float | int = 0.0,
+                 sigma: float | int = 0.4,
+                 plot: bool = False,
+                 save: Optional[str] = None) -> npt.ArrayLike | tuple[npt.ArrayLike, tuple[matplotlib.figure.Figure, matplotlib.axes.Axes]]:
     """
     Build a cosine wavelet. The wavelet is a cosine curve multiplied by a Gaussian curve.
 
@@ -459,7 +459,7 @@ def cos_wavelet(wavelength: int = 100,
     cosine_curve = amplitude * np.cos(2 * np.pi * frequency * x + phase_shift)
 
     # Compute the Gaussian values for each x
-    gaussian = gauss(x, mu, sigma)
+    gaussian = _gauss(x, mu, sigma)
 
     # Multiply the cosine curve with the Gaussian
     wavelet = cosine_curve * gaussian
@@ -483,8 +483,8 @@ def cos_wavelet(wavelength: int = 100,
 
 
 @beartype
-def get_wavelets(wavelengths: list[int],
-                 sigma: float = 0.4) -> list[npt.ArrayLike]:
+def _get_wavelets(wavelengths: list[int],
+                  sigma: float = 0.4) -> list[npt.ArrayLike]:
     """
     Get a list of wavelets.
 
@@ -502,20 +502,20 @@ def get_wavelets(wavelengths: list[int],
     """
     wavelets = []
     for wavelength in wavelengths:
-        wavelet = cos_wavelet(wavelength=wavelength,
-                              amplitude=1.0,
-                              phase_shift=0,
-                              mu=0.0,
-                              sigma=sigma,
-                              plot=False)
+        wavelet = _cos_wavelet(wavelength=wavelength,
+                               amplitude=1.0,
+                               phase_shift=0,
+                               mu=0.0,
+                               sigma=sigma,
+                               plot=False)
         wavelets.append(wavelet)
 
     return wavelets
 
 
 @beartype
-def wavelet_transformation(data: npt.ArrayLike,
-                           wavelets: list[npt.ArrayLike]) -> npt.ArrayLike:
+def _wavelet_transformation(data: npt.ArrayLike,
+                            wavelets: list[npt.ArrayLike]) -> npt.ArrayLike:
     """
     Get wavelet transformations of the fragment length distributions.
 
@@ -542,9 +542,9 @@ def wavelet_transformation(data: npt.ArrayLike,
 
 
 @beartype
-def wavelet_transform_fld(dists_arr: npt.ArrayLike,
-                          wavelengths: Optional[list[int]] = None,
-                          sigma: float = 0.4) -> npt.ArrayLike:
+def _wavelet_transform_fld(dists_arr: npt.ArrayLike,
+                           wavelengths: Optional[list[int]] = None,
+                           sigma: float = 0.4) -> npt.ArrayLike:
     """
     Get wavelet transformations of the fragment length distributions.
 
@@ -568,12 +568,12 @@ def wavelet_transform_fld(dists_arr: npt.ArrayLike,
         wavelengths = np.arange(5, 250, 5).astype(int)
 
     # Get wavelets
-    wavelets = get_wavelets(wavelengths, sigma=sigma)
+    wavelets = _get_wavelets(wavelengths, sigma=sigma)
 
     dataset_convolution = []
     # Process each cell with the wavelet transformation
     for cell in tqdm(dists_arr, desc="Processing cells"):
-        dataset_convolution.append(wavelet_transformation(cell, wavelets))
+        dataset_convolution.append(_wavelet_transformation(cell, wavelets))
 
     dataset_convolution = np.array(dataset_convolution)
 
@@ -581,11 +581,11 @@ def wavelet_transform_fld(dists_arr: npt.ArrayLike,
 
 
 @beartype
-def custom_conv(data: npt.ArrayLike,
-                wavelength: int = 150,
-                sigma: float = 0.4,
-                mode: str = 'convolve',
-                plot_wavl: bool = False) -> npt.ArrayLike:
+def _custom_conv(data: npt.ArrayLike,
+                 wavelength: int = 150,
+                 sigma: float = 0.4,
+                 mode: str = 'convolve',
+                 plot_wavl: bool = False) -> npt.ArrayLike:
     """
     Get custom implementation of a wavelet transformation based convolution.
 
@@ -610,19 +610,19 @@ def custom_conv(data: npt.ArrayLike,
 
     # Get the wavelet
     if plot_wavl:
-        wavelet, _ = cos_wavelet(wavelength=wavelength,
-                                 amplitude=1.0,
-                                 phase_shift=0,
-                                 mu=0.0,
-                                 sigma=sigma,
-                                 plot=plot_wavl)
+        wavelet, _ = _cos_wavelet(wavelength=wavelength,
+                                  amplitude=1.0,
+                                  phase_shift=0,
+                                  mu=0.0,
+                                  sigma=sigma,
+                                  plot=plot_wavl)
     else:
-        wavelet = cos_wavelet(wavelength=wavelength,
-                              amplitude=1.0,
-                              phase_shift=0,
-                              mu=0.0,
-                              sigma=sigma,
-                              plot=plot_wavl)
+        wavelet = _cos_wavelet(wavelength=wavelength,
+                               amplitude=1.0,
+                               phase_shift=0,
+                               mu=0.0,
+                               sigma=sigma,
+                               plot=plot_wavl)
 
     # convolve with the data
     convolved_data = []
@@ -636,17 +636,17 @@ def custom_conv(data: npt.ArrayLike,
 
 
 @beartype
-def score_by_conv(data: npt.ArrayLike,
-                  wavelength: int = 150,
-                  sigma: float = 0.4,
-                  plot_wavl: bool = False,
-                  n_threads: int = 12,
-                  peaks_thr: SupportsFloat = 0.01,
-                  operator: str = 'bigger',
-                  plot_mask: bool = False,
-                  plot_ov: bool = True,
-                  save: Optional[str] = None,
-                  sample: int = 0) -> npt.ArrayLike:
+def _score_by_conv(data: npt.ArrayLike,
+                   wavelength: int = 150,
+                   sigma: float = 0.4,
+                   plot_wavl: bool = False,
+                   n_threads: int = 12,
+                   peaks_thr: SupportsFloat = 0.01,
+                   operator: str = 'bigger',
+                   plot_mask: bool = False,
+                   plot_ov: bool = True,
+                   save: Optional[str] = None,
+                   sample: int = 0) -> npt.ArrayLike:
     """
     Get a score by a continues wavelet transformation based convolution of the distribution with a single wavelet and score mask.
 
@@ -681,16 +681,16 @@ def score_by_conv(data: npt.ArrayLike,
         Array of scores for each sample
     """
 
-    convolved_data = custom_conv(data, wavelength=wavelength, sigma=sigma, plot_wavl=plot_wavl)
+    convolved_data = _custom_conv(data, wavelength=wavelength, sigma=sigma, plot_wavl=plot_wavl)
 
-    peaks = call_peaks(convolved_data, n_threads=n_threads)
+    peaks = _call_peaks(convolved_data, n_threads=n_threads)
 
-    filtered_peaks = filter_peaks(peaks, reference=convolved_data, peaks_thr=peaks_thr, operator=operator)
+    filtered_peaks = _filter_peaks(peaks, reference=convolved_data, peaks_thr=peaks_thr, operator=operator)
 
-    scores = score_mask(peaks, convolved_data, plot=plot_mask)
+    scores = _score_mask(peaks, convolved_data, plot=plot_mask)
 
     if plot_ov:
-        plot_custom_conv(convolved_data, data, filtered_peaks, scores=scores, sample_n=sample, save=save)
+        _plot_custom_conv(convolved_data, data, filtered_peaks, scores=scores, sample_n=sample, save=save)
 
     return scores
 
@@ -818,10 +818,10 @@ def density_plot(count_table: npt.ArrayLike,
 
 
 @beartype
-def plot_wavelet_transformation(convolution: npt.ArrayLike,
-                                wavelengths: npt.ArrayLike,
-                                fld: Optional[npt.ArrayLike] = None,
-                                save: Optional[str] = None) -> npt.ArrayLike:
+def _plot_wavelet_transformation(convolution: npt.ArrayLike,
+                                 wavelengths: npt.ArrayLike,
+                                 fld: Optional[npt.ArrayLike] = None,
+                                 save: Optional[str] = None) -> npt.ArrayLike:
     """
     Plot the wavelet transformation of the fragment length distribution.
 
@@ -890,12 +890,12 @@ def plot_wavelet_transformation(convolution: npt.ArrayLike,
 
 
 @beartype
-def plot_custom_conv(convolved_data: npt.ArrayLike,
-                     data: npt.ArrayLike,
-                     peaks: npt.ArrayLike,
-                     scores: npt.ArrayLike,
-                     sample_n: int = 0,
-                     save: Optional[str] = None) -> npt.ArrayLike:
+def _plot_custom_conv(convolved_data: npt.ArrayLike,
+                      data: npt.ArrayLike,
+                      peaks: npt.ArrayLike,
+                      scores: npt.ArrayLike,
+                      sample_n: int = 0,
+                      save: Optional[str] = None) -> npt.ArrayLike:
     """
     Plot the overlay of the convolved data, the peaks and the score mask.
 
@@ -962,7 +962,7 @@ def plot_custom_conv(convolved_data: npt.ArrayLike,
 
 # https://numpy.org/doc/2.2/reference/random/multithreading.html
 @beartype
-class MultithreadedMultinomialSampler:
+class _MultithreadedMultinomialSampler:
     """Multithreaded multinomial sampler."""
 
     def __init__(self,
@@ -1051,7 +1051,7 @@ class MultithreadedMultinomialSampler:
         self.std_dev = np.zeros_like(self.dists_arr, dtype=np.float64)
 
     @beartype
-    def process_batch(self, batch_indices: npt.ArrayLike) -> Dict[np.int64, Tuple[npt.ArrayLike, npt.ArrayLike]]:
+    def _process_batch(self, batch_indices: npt.ArrayLike) -> Dict[np.int64, Tuple[npt.ArrayLike, npt.ArrayLike]]:
         """Process a batch of distribution indices."""
 
         results = {}
@@ -1112,7 +1112,7 @@ class MultithreadedMultinomialSampler:
         return results
 
     @beartype
-    def sample(self) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
+    def _sample(self) -> Tuple[npt.ArrayLike, npt.ArrayLike]:
         """Perform multithreaded multinomial sampling."""
 
         # Early return if no subsampling needed
@@ -1134,7 +1134,7 @@ class MultithreadedMultinomialSampler:
             desc="Processing Samples"
         )
 
-        futures = [self.executor.submit(self.process_batch, batch) for batch in batches]
+        futures = [self.executor.submit(self._process_batch, batch) for batch in batches]
 
         for future in concurrent.futures.as_completed(futures):
             # Collect results
@@ -1286,7 +1286,7 @@ def add_fld_metrics(adata: sc.AnnData,
 
     # Monte Carlo Multinomial Sampling (Optional)
     if sample_size is not None:
-        sampler = MultithreadedMultinomialSampler(
+        sampler = _MultithreadedMultinomialSampler(
             dists_arr,
             insert_counts,
             sample_size=sample_size,
@@ -1294,7 +1294,7 @@ def add_fld_metrics(adata: sc.AnnData,
             seed=mc_seed,
             n_threads=n_threads
         )
-        dists_arr_subsampled, _ = sampler.sample()
+        dists_arr_subsampled, _ = sampler._sample()
     else:
         dists_arr_subsampled = dists_arr
 
@@ -1305,17 +1305,17 @@ def add_fld_metrics(adata: sc.AnnData,
 
     # calculate scores using the convolution method
     print("calculating scores using the custom continues wavelet transformation...")
-    conv_scores = score_by_conv(data=dists_arr_subsampled,
-                                wavelength=wavelength,
-                                sigma=sigma,
-                                plot_wavl=plot,
-                                n_threads=n_threads,
-                                peaks_thr=peaks_thr,
-                                operator='bigger',
-                                plot_mask=plot,
-                                plot_ov=plot,
-                                save=save_overview,
-                                sample=sample)
+    conv_scores = _score_by_conv(data=dists_arr_subsampled,
+                                 wavelength=wavelength,
+                                 sigma=sigma,
+                                 plot_wavl=plot,
+                                 n_threads=n_threads,
+                                 peaks_thr=peaks_thr,
+                                 operator='bigger',
+                                 plot_mask=plot,
+                                 plot_ov=plot,
+                                 save=save_overview,
+                                 sample=sample)
 
     # create a dataframe with the scores and match the barcodes
     inserts_df = pd.DataFrame(data={'fld_score': conv_scores,
