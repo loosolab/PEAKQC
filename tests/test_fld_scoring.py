@@ -2,6 +2,8 @@
 # Author: Jan Detleffsen (jan.detleffsen@mpi-bn.mpg.de)
 
 import pytest
+from unittest.mock import Mock
+
 import os
 import scanpy as sc
 import numpy as np
@@ -509,6 +511,27 @@ class Test_MultithreadedMultinomialSampler:
         not_mask = ~mask
         if np.any(not_mask):
             assert np.array_equal(result_dists[not_mask], self.reference_dists[not_mask])
+
+    def test_process_batch(self):
+        """Test with size=1 and sample_all=False."""
+        sampler = _MultithreadedMultinomialSampler(
+            dists_arr=self.dists_arr.copy(),
+            insert_counts=self.insert_counts,
+            sample_size=self.sample_size,
+            n_simulations=10,
+            sample_all=False,
+            size=1,
+            seed=42,
+            n_threads=self.n_threads
+        )
+        batch = [0]
+        sampler.pbar = Mock()  # mock tqdm
+        result = sampler._process_batch(batch)
+
+        assert isinstance(result, dict)
+        assert 0 in result
+        assert len(result[0][0]) == 4
+        assert len(result[0][1]) == 4
 
     def test_with_size_1(self):
         """Test with size=1 and sample_all=False."""

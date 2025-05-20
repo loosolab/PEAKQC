@@ -1051,7 +1051,7 @@ class _MultithreadedMultinomialSampler:
         self.std_dev = np.zeros_like(self.dists_arr, dtype=np.float64)
 
     @beartype
-    def _process_batch(self, batch_indices: npt.ArrayLike) -> Dict[np.int64, Tuple[npt.ArrayLike, npt.ArrayLike]]:
+    def _process_batch(self, batch_indices: npt.ArrayLike) -> Dict[int, Tuple[npt.ArrayLike, npt.ArrayLike]]:
         """Process a batch of distribution indices."""
 
         results = {}
