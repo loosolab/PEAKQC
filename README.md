@@ -100,3 +100,9 @@ adata = add_fld_metrics(adata=anndata,
                         )
 ```
 
+In our experience, PEAKQC scores above 100 are generally effective for filtering out low-quality cells. Hereby PEAKQC scores positively correlate with improving FLD patterns. However, it is important to note that optimal thresholds can vary between datasets and should be tuned to achieve reliable results.
+
+Threshold selection may also depend on the specific requirements of your downstream analysis, and should be adjusted accordingly.
+
+
+
