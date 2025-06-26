@@ -78,7 +78,7 @@ pip install .
 Below is a minimal example showing how to integrate FLD scoring into a Jupyter Notebook. A fully worked example is available at [`paper/example_notebook.ipynb`](paper/example_notebook.ipynb).
 
 1. **Load your AnnData object**  
-   ```python
+```python
    import scanpy as sc
 
    # replace with your path to the .h5ad file
