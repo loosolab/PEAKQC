@@ -1174,7 +1174,7 @@ def add_fld_metrics(adata: sc.AnnData,
                     sample: int = 0,
                     n_threads: int = 8,
                     colormap_density: str = 'jet',
-                    sample_size: Optional[int] = 10000,
+                    sample_size: Optional[int] = 5000,
                     mc_seed: int = 42,
                     mc_samples: int = 1000,
                     return_distributions: bool = False) -> Optional[Tuple[pd.DataFrame, npt.ArrayLike]]:

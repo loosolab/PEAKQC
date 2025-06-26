@@ -75,28 +75,57 @@ pip install .
 
 # Quickstart
 
-Import the `add_fld_metrics()` function from the `fld_scoring` module.
-Assure that the anndata.obs table contains the same barcodes as the provided fragment source. 
-This includes that the barcodes are in the same format.
+Below is a minimal example showing how to integrate FLD scoring into a Jupyter Notebook. A fully worked example is available at [`paper/example_notebook.ipynb`](paper/example_notebook.ipynb).
 
-The anndata.obs column where the barcodes are stored can be specified with the `barcode_col` argument. When the barcodes are the index of the table leave the `barcode_col` argument to be `None`.
+1. **Load your AnnData object**  
+```python
+   import scanpy as sc
 
-Next provide either a bedfile containing the fragments or a bamfile by the `fragments` argument. If available using a bedfile is recommended due to shorter runtime.
-
+   # replace with your path to the .h5ad file
+   anndata = sc.read_h5ad('path/to/your_data.h5ad')
 ```
-from peakqc.fld_scoring import *
 
+Note: We recommend storing your cell barcodes as the `.obs` index in `adata`. If your barcodes are instead in a specific `.obs` column, you can override this via the `barcode_col` parameter (see below).
+
+2. **Import FLD scoring function**
+
+```python
+from peakqc.fld_scoring import add_fld_metrics
+```
+3. **Prepare fragment files**
+
+    - Provide either a BED or BAM file via fragments=.
+
+    - BED files are recommended for faster runtime.
+
+    - Example:
+```python
+fragments = 'path/to/fragments.bed'      # or .bam
+```
+
+4. **Run FLD scoring**
+```python
 adata = add_fld_metrics(adata=anndata,
-                        fragments=fragments_bedfile,
+                        fragments=fragments,
                         barcode_col=None,
                         plot=True,
                         save_density=None,
                         save_overview=None,
                         sample=0,
                         n_threads=8,
-                        sample_size=10000,
+                        sample_size=5000,
                         mc_seed=42,
                         mc_samples=1000
                         )
 ```
+
+5. **Filter on PEAKQC scores**
+    In our experience, PEAKQC scores above 100 are generally effective for filtering out low-quality cells. Hereby PEAKQC scores positively correlate with improving FLD patterns. However, it is important to note that optimal thresholds can vary between datasets and should be tuned to achieve reliable results.
+
+    Threshold selection may also depend on the specific requirements of your downstream analysis, and should be adjusted accordingly.
+
+For a step-by-step walkthrough along with plotting examples, see the example notebook at
+`paper/example_notebook.ipynb`
+
+
 
