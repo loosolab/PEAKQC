@@ -23,12 +23,9 @@ RUN mamba update -n base mamba && \
 # install enviroment
 RUN mamba env update -n base -f /tmp/peakqc_env.yml
 
-# install sctoolbox
+# install peakqc
 RUN pip install "/tmp/" && \
-    pip install pytest && \
-    pip install pytest-cov && \
-    pip install pytest-html && \
-    pip install pytest-mock
+    pip install "/tmp/[test]"
 
 # clear tmp
 RUN rm -r /tmp/*
