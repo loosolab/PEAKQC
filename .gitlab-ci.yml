@@ -168,7 +168,7 @@ lint:
     default: false # do not inherit before_script
   stage: test
   tags:
-    - coverage
+    - sctoolbox
   script:
     - python --version
     - pip install flake8
@@ -189,7 +189,7 @@ test coverage:
   stage: test
   image: "$CI_REGISTRY_IMAGE:$DYNAMIC_IMAGE_TAG"
   tags:
-    - coverage
+    - sctoolbox
   coverage: '/TOTAL.*\s(\d*.\d*\%)/'
   script:
     - pip install .
