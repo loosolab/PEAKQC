@@ -23,8 +23,9 @@ RUN mamba update -n base mamba && \
 # install enviroment
 RUN mamba env update -n base -f /tmp/peakqc_env.yml
 
-# install sctoolbox
-RUN pip install "/tmp/" --group "/tmp/pyproject.toml:test"
+# install peakqc
+RUN pip install "/tmp/" && \
+    pip install "/tmp/[test]"
 
 # clear tmp
 RUN rm -r /tmp/*

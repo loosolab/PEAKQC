@@ -8,7 +8,6 @@ __all__ = [
     "__version__"
 ]
 
-
 def __dir__():
     """Return the defined submodules."""
     return __all__
