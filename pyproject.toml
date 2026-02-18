@@ -68,6 +68,7 @@ test = [
 [project.urls]
 Repository = "https://github.com/loosolab/PEAKQC"
 Issues = "https://github.com/loosolab/PEAKQC/issues"
+Changelog = "https://github.com/loosolab/PEAKQC/blob/main/CHANGES.md"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
