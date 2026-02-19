@@ -120,7 +120,7 @@ build-package:
   script:
     # build the package and upload to the GitLab package registry
     - python -m build --sdist --wheel  # build the package
-    - python -m twine upload --verbose --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*  # upload the package to the GitLab package registry
+    - python -m twine upload --verbose --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/peakqc-${BUILD_VERSION}*  # upload the package to the GitLab package registry
     # collect the current changes and export as variable
     - changelog=$(python scripts/collect_changes.py CHANGES.md $BUILD_VERSION)
     - echo "Changelog entries:"
