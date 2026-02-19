@@ -1,3 +1,0 @@
-scanpy>=1.9
-pysam
-scipy
