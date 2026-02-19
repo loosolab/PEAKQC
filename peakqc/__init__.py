@@ -1,1 +1,0 @@
-"""PEAKQC (peakqc)."""
