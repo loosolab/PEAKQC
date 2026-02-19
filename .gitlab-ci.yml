@@ -367,9 +367,6 @@ GitLab-release:
       artifacts: true
     - job: build-package  # so the build package is available
       artifacts: true
-    # wait until the tests are done
-    - job: test coverage
-    - job: lint
   script:
     - echo "Running $BUILD_VERSION release"
   release:
