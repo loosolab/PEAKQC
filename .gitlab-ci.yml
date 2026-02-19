@@ -399,7 +399,7 @@ PyPI:
     - pip install build twine
   script:
     - ls -lah dist/  # to check if the package is there
-    - python -m twine upload --verbose --repository pypi dist/*  # upload the package to PyPI
+    - python -m twine upload --verbose --repository pypi dist/peakqc-${BUILD_VERSION}*  # upload the package to PyPI
   rules:
     - if: $CI_COMMIT_BRANCH == "main"  # always and only run for commits to main
       allow_failure: false
