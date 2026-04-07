@@ -46,6 +46,13 @@ def fragments_file():
 
 
 @pytest.fixture
+def int_barcodes_fragments_file():
+    """Return a fragments file with integer barcodes."""
+
+    return os.path.join(os.path.dirname(__file__), 'data', 'insertsizes_related', 'int_barcodes_fragments.bed')
+
+
+@pytest.fixture
 def bam_file():
     """Return a bam file."""
 
@@ -223,6 +230,23 @@ def test_insertsize_from_bam(bam_file, barcodes):
                                             regions='chr1:1-100000')
 
     assert table.shape[0] == 2705  # Number of unique cell barcodes in the table
+
+
+def test_insertsize_from_fragments_int_barcodes(int_barcodes_fragments_file):
+    """Test that insertsize_from_fragments works when barcodes are integers."""
+
+    table = insertsizes.insertsize_from_fragments(fragments=int_barcodes_fragments_file,
+                                                  barcodes=None,
+                                                  n_threads=1)
+
+    assert '19401152' in table.index
+    assert table.loc['19401152', 'insertsize_count'] == 2
+
+    table_filtered = insertsizes.insertsize_from_fragments(fragments=int_barcodes_fragments_file,
+                                                           barcodes=['19401152', '56420551'],
+                                                           n_threads=1)
+    assert table_filtered.shape[0] == 2
+    assert '14581843' not in table_filtered.index
 
 
 @pytest.mark.parametrize('chunk, response', [(0, 49), (1, 100)])
