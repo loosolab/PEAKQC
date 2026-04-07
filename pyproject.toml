@@ -16,7 +16,7 @@ build-backend = "setuptools.build_meta"
 name = "PEAKQC"
 dynamic = ["version"]
 description = 'Module for quality control of ATAC-seq data'
-requires-python = '>=3.9'
+requires-python = '>=3.9,<3.14'
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [
@@ -36,8 +36,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
-  "Programming Language :: Python :: 3.14"
+  "Programming Language :: Python :: 3.13"
 ]
 keywords = [
     "quality control",
