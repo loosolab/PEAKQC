@@ -139,6 +139,7 @@ def insertsize_from_fragments(fragments: str,
                            delimiter='\t',
                            header=None,
                            names=['chr', 'start', 'stop', 'barcode', 'count'],
+                           dtype={'barcode': str},
                            iterator=True,
                            chunksize=chunk_size)
 
