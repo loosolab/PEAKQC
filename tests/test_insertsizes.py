@@ -19,6 +19,7 @@ def tsv_head_tail():
                            delimiter='\t',
                            header=None,
                            names=['chr', 'start', 'stop', 'barcode', 'count'],
+                           dtype={'barcode': str},
                            iterator=True,
                            chunksize=100)
 
