@@ -127,5 +127,22 @@ adata = add_fld_metrics(adata=anndata,
 For a step-by-step walkthrough along with plotting examples, see the example notebook at
 `paper/example_notebook.ipynb`
 
+# How to cite
+
+Thank you for using PEAKQC — we hope it helps with your single-cell ATAC-seq quality control!
+
+If PEAKQC contributed to your research, we would be grateful if you considered citing our paper. It is entirely optional, but it helps others discover the tool and supports its continued development.
+
+> Detleffsen, J., Bruns, B. J., Bentsen, M., Kuenne, C., & Looso, M. PEAKQC: Periodicity Evaluation in scATAC-seq data for quality assessment. DOI: `<https://doi.org/10.1093/bib/bbaf465>`
+
+BibTeX:
+```bibtex
+@article{peakqc,
+  title   = {PEAKQC: Periodicity Evaluation in scATAC-seq data for quality assessment},
+  author  = {Detleffsen, Jan and Bruns, Brenton Joey and Bentsen, Mette and Kuenne, Carsten and Looso, Mario},
+  url     = {https://doi.org/10.1093/bib/bbaf465}
+}
+```
+
 
 
