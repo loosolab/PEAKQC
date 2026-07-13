@@ -298,7 +298,7 @@ build-pages:
       allow_failure: true
     - if: $CI_COMMIT_BRANCH == "dev"  # always for commits to dev
       changes:
-        - peakqc/*.py
+        - src/peakqc/*.py
       allow_failure: false
     - if: $CI_COMMIT_BRANCH == "main"  # always for commits to dev
       allow_failure: false
